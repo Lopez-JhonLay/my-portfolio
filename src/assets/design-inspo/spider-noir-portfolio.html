@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LOKI — Case No. 001</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&family=Libre+Franklin:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ===== NIGHT SHIFT (dark, default) — true monochrome ===== */
+    --bg:#0a0a0a;
+    --bg-soft:#121212;
+    --panel:#161616;
+    --panel-2:#1f1f1f;
+    --ink:#ededed;
+    --ink-dim:#9a9a9a;
+    --hair:#3a3a3a;
+    --accent:#ffffff;
+    --accent-soft:#bdbdbd;
+    --web-line: rgba(255,255,255,0.14);
+    --web-line-strong: rgba(255,255,255,0.26);
+    --shadow-strong: 0 30px 60px rgba(0,0,0,0.6);
+    --grain-opacity: 0.06;
+    --spot: radial-gradient(ellipse 60% 45% at 50% 0%, rgba(255,255,255,0.07), transparent 70%);
+  }
+  html[data-theme="day"]{
+    /* ===== DAYLIGHT CASE (light) — true monochrome ===== */
+    --bg:#f0f0f0;
+    --bg-soft:#e6e6e6;
+    --panel:#fafafa;
+    --panel-2:#ececec;
+    --ink:#141414;
+    --ink-dim:#5a5a5a;
+    --hair:#cfcfcf;
+    --accent:#000000;
+    --accent-soft:#4a4a4a;
+    --web-line: rgba(0,0,0,0.12);
+    --web-line-strong: rgba(0,0,0,0.22);
+    --shadow-strong: 0 24px 48px rgba(0,0,0,0.18);
+    --grain-opacity: 0.04;
+    --spot: radial-gradient(ellipse 60% 45% at 50% 0%, rgba(0,0,0,0.05), transparent 70%);
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html{ scroll-behavior:smooth; }
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Libre Franklin', sans-serif;
+    overflow-x:hidden;
+    transition:background .5s ease, color .5s ease;
+    position:relative;
+  }
+
+  ::selection{ background:var(--accent); color:var(--bg); }
+
+  a{ color:inherit; text-decoration:none; }
+  ul{ list-style:none; }
+
+  h1,h2,h3{ font-family:'Bebas Neue', sans-serif; letter-spacing:.03em; font-weight:400; }
+  .type{ font-family:'Special Elite', cursive; }
+
+  /* ---------- grain + vignette overlay ---------- */
+  .grain{
+    position:fixed; inset:0; pointer-events:none; z-index:900;
+    opacity:var(--grain-opacity);
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    mix-blend-mode:overlay;
+  }
+  .vignette{
+    position:fixed; inset:0; pointer-events:none; z-index:899;
+    box-shadow:inset 0 0 18vw rgba(0,0,0,.55);
+    transition:box-shadow .5s ease;
+  }
+  html[data-theme="day"] .vignette{ box-shadow:inset 0 0 16vw rgba(30,24,10,.28); }
+
+  /* ---------- nav ---------- */
+  header{
+    position:fixed; top:0; left:0; right:0; z-index:800;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:22px clamp(20px,5vw,64px);
+    background:linear-gradient(to bottom, var(--bg) 0%, transparent 100%);
+  }
+  .brand{ display:flex; align-items:center; gap:10px; font-family:'Bebas Neue'; font-size:22px; letter-spacing:.08em; }
+  .brand svg{ width:26px; height:26px; }
+  nav ul{ display:flex; gap:clamp(14px,3vw,34px); font-size:12.5px; letter-spacing:.14em; text-transform:uppercase; }
+  nav a{ position:relative; padding-bottom:4px; opacity:.85; }
+  nav a:hover{ opacity:1; }
+  nav a::after{
+    content:""; position:absolute; left:0; right:100%; bottom:-2px; height:1px;
+    background:var(--accent); transition:right .25s ease;
+  }
+  nav a:hover::after{ right:0; }
+  nav ul{ display:none; }
+  @media(min-width:760px){ nav ul{ display:flex; } }
+
+  /* ---------- theme toggle: pull-chain lamp switch ---------- */
+  .lamp-toggle{
+    display:flex; align-items:center; gap:10px; cursor:pointer;
+    background:none; border:none; color:var(--ink); font-family:'Special Elite';
+    font-size:10.5px; letter-spacing:.16em; text-transform:uppercase;
+  }
+  .lamp-toggle .label{ opacity:.75; }
+  .switch{
+    position:relative; width:52px; height:26px; border-radius:3px;
+    background:var(--panel-2); border:1px solid var(--hair);
+    box-shadow:inset 0 2px 4px rgba(0,0,0,.4);
+  }
+  .switch .bulb{
+    position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:2px;
+    background:var(--accent); transition:transform .35s cubic-bezier(.65,-0.2,.35,1.3), background .35s ease;
+    display:flex; align-items:center; justify-content:center;
+  }
+  html[data-theme="day"] .switch .bulb{ transform:translateX(26px); }
+  .switch .bulb svg{ width:12px; height:12px; }
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative; min-height:100svh; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    padding:120px 20px 60px; overflow:hidden;
+  }
+  #webCanvas{ position:absolute; inset:0; width:100%; height:100%; z-index:0; }
+  .hero::before{
+    content:""; position:absolute; inset:0; background:var(--spot); z-index:1; pointer-events:none;
+  }
+  .hero-inner{ position:relative; z-index:2; max-width:820px; }
+  .case-tag{
+    display:inline-block; font-family:'Special Elite'; font-size:12px; letter-spacing:.22em;
+    color:var(--accent-soft); border:1px solid var(--hair); padding:6px 14px; border-radius:2px;
+    margin-bottom:26px; transform:rotate(-1.2deg);
+  }
+  .hero h1{
+    font-size:clamp(56px,11vw,124px); line-height:.92; color:var(--ink);
+    text-shadow: 0 2px 0 rgba(0,0,0,.3);
+  }
+  .hero h1 span{ color:var(--accent); }
+  .hero .role{
+    margin-top:10px; font-size:clamp(14px,2vw,19px); letter-spacing:.32em; text-transform:uppercase; color:var(--ink-dim);
+  }
+  .hero p.tag{
+    max-width:520px; margin:26px auto 0; font-size:15.5px; line-height:1.7; color:var(--ink-dim);
+  }
+  .hero-cta{ display:flex; gap:16px; justify-content:center; margin-top:38px; flex-wrap:wrap; }
+  .btn{
+    padding:14px 28px; font-size:12.5px; letter-spacing:.16em; text-transform:uppercase;
+    border-radius:2px; cursor:pointer; transition:transform .2s ease, box-shadow .2s ease;
+    font-family:'Libre Franklin'; font-weight:600;
+  }
+  .btn-solid{ background:var(--accent); color:var(--bg); border:1px solid var(--accent); }
+  .btn-solid:hover{ transform:translateY(-2px); box-shadow:0 10px 24px rgba(0,0,0,.35); }
+  .btn-ghost{ background:transparent; color:var(--ink); border:1px solid var(--hair); }
+  .btn-ghost:hover{ border-color:var(--ink-dim); transform:translateY(-2px); }
+
+  .spider{ position:absolute; top:-40px; width:26px; height:26px; z-index:2; opacity:.9; pointer-events:none; }
+  .spider svg{ width:100%; height:100%; fill:var(--ink-dim); }
+
+  .scroll-cue{
+    position:absolute; bottom:26px; left:50%; transform:translateX(-50%); z-index:2;
+    font-family:'Special Elite'; font-size:10.5px; letter-spacing:.2em; color:var(--ink-dim);
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+  }
+  .scroll-cue::after{
+    content:""; width:1px; height:34px; background:linear-gradient(var(--ink-dim), transparent);
+    animation:pulse-line 2s ease-in-out infinite;
+  }
+  @keyframes pulse-line{ 0%,100%{opacity:.2} 50%{opacity:.9} }
+
+  /* ---------- section shell ---------- */
+  section{ position:relative; padding:120px clamp(20px,6vw,80px); max-width:1180px; margin:0 auto; }
+  .eyebrow{
+    font-family:'Special Elite'; font-size:12px; letter-spacing:.24em; text-transform:uppercase;
+    color:var(--accent); margin-bottom:14px; display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{ content:""; width:26px; height:1px; background:var(--accent); }
+  .section-title{ font-size:clamp(38px,6vw,64px); margin-bottom:18px; }
+  .section-lead{ max-width:640px; color:var(--ink-dim); line-height:1.75; font-size:15.5px; }
+
+  /* ---------- about / dossier ---------- */
+  .dossier{
+    margin-top:56px; background:var(--panel); border:1px solid var(--hair);
+    box-shadow:var(--shadow-strong); border-radius:2px; position:relative;
+    display:grid; grid-template-columns:1fr; overflow:hidden;
+  }
+  @media(min-width:820px){ .dossier{ grid-template-columns:1.1fr 1.5fr; } }
+  .dossier-stamp{
+    position:absolute; top:26px; right:26px; z-index:3;
+    border:2px solid var(--accent); color:var(--accent); font-family:'Special Elite';
+    font-size:11px; letter-spacing:.14em; padding:6px 12px; transform:rotate(8deg);
+    opacity:.85; border-radius:2px;
+  }
+  .dossier-photo{
+    position:relative; background:var(--bg-soft);
+    background-image:
+      repeating-linear-gradient(135deg, transparent, transparent 22px, var(--web-line) 22px, var(--web-line) 23px),
+      repeating-linear-gradient(45deg, transparent, transparent 22px, var(--web-line) 22px, var(--web-line) 23px);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
+    min-height:280px; padding:40px;
+  }
+  .photo-frame{
+    position:relative; width:100%; max-width:230px; aspect-ratio:3/4;
+    background:var(--panel-2); border:1px solid var(--hair);
+    box-shadow:0 18px 34px rgba(0,0,0,.4);
+  }
+  .photo-frame img{
+    width:100%; height:100%; object-fit:cover; display:block;
+    filter:grayscale(1) contrast(1.15) brightness(.9);
+  }
+  .photo-frame .tape{
+    position:absolute; width:54px; height:16px; top:-8px;
+    background:var(--web-line-strong); border:1px solid var(--web-line);
+    box-shadow:0 2px 4px rgba(0,0,0,.3);
+  }
+  .photo-frame .tape.left{ left:-10px; transform:rotate(-38deg); }
+  .photo-frame .tape.right{ right:-10px; transform:rotate(38deg); }
+  .photo-caption{
+    font-size:11px; letter-spacing:.1em; color:var(--ink-dim); text-align:center; max-width:220px;
+  }
+  .dossier-body{ padding:clamp(28px,4vw,52px); }
+  .dossier-body h3{ font-size:30px; margin-bottom:6px; }
+  .dossier-body .subline{ font-family:'Special Elite'; font-size:12.5px; color:var(--accent-soft); margin-bottom:22px; letter-spacing:.08em; }
+  .dossier-body p{ color:var(--ink-dim); line-height:1.85; font-size:15px; margin-bottom:14px; }
+  .file-facts{ margin-top:24px; display:grid; grid-template-columns:1fr 1fr; gap:14px 30px; }
+  .file-facts div{ border-top:1px solid var(--hair); padding-top:10px; }
+  .file-facts .k{ font-family:'Special Elite'; font-size:10.5px; letter-spacing:.14em; color:var(--ink-dim); text-transform:uppercase; }
+  .file-facts .v{ font-size:14.5px; margin-top:4px; }
+
+  /* ---------- arsenal / skills ---------- */
+  .arsenal-grid{
+    margin-top:54px; display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:2px;
+    background:var(--hair); border:1px solid var(--hair);
+  }
+  .weapon-card{
+    background:var(--panel); padding:28px 24px; transition:background .25s ease, transform .25s ease;
+    position:relative; overflow:hidden;
+  }
+  .weapon-card:hover{ background:var(--panel-2); transform:translateY(-3px); }
+  .weapon-card .icon{ width:34px; height:34px; margin-bottom:18px; }
+  .weapon-card .icon svg{ width:100%; height:100%; fill:none; stroke:var(--accent); stroke-width:1.4; }
+  .weapon-card h4{ font-size:18px; letter-spacing:.04em; margin-bottom:6px; }
+  .weapon-card .caliber{ font-family:'Special Elite'; font-size:11px; color:var(--ink-dim); letter-spacing:.08em; }
+  .weapon-card::after{
+    content:""; position:absolute; right:-18px; bottom:-18px; width:70px; height:70px; border-radius:50%;
+    border:1px dashed var(--web-line-strong); opacity:.5;
+  }
+
+  /* ---------- case files / projects (corkboard) ---------- */
+  .corkboard{
+    position:relative; margin-top:60px; padding:40px clamp(10px,3vw,40px);
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,.02), transparent 40%),
+      var(--bg-soft);
+    border:1px solid var(--hair); border-radius:2px;
+  }
+  #stringCanvas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1; }
+  .cases{
+    position:relative; z-index:2; display:grid; gap:44px 32px;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  }
+  .case-card{
+    background:var(--panel); border:1px solid var(--hair); padding:26px; position:relative;
+    box-shadow:0 14px 26px rgba(0,0,0,.28); transition:transform .25s ease;
+  }
+  .case-card:hover{ transform:translateY(-6px) rotate(-0.4deg); }
+  .pin{
+    position:absolute; top:-9px; left:50%; transform:translateX(-50%); width:16px; height:16px; border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 3px 5px rgba(0,0,0,.4); z-index:3;
+  }
+  .case-card .num{ font-family:'Special Elite'; font-size:11px; color:var(--accent-soft); letter-spacing:.12em; }
+  .case-card h4{ font-size:23px; margin:8px 0 10px; }
+  .case-card p{ color:var(--ink-dim); font-size:14px; line-height:1.7; margin-bottom:16px; }
+  .tagset{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px; }
+  .tagset span{
+    font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-dim);
+    border:1px solid var(--hair); padding:4px 9px; border-radius:2px; font-family:'Special Elite';
+  }
+  .case-link{
+    font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--accent);
+    display:inline-flex; align-items:center; gap:6px; font-weight:600;
+  }
+  .case-link svg{ width:13px; height:13px; fill:var(--accent); transition:transform .2s ease; }
+  .case-link:hover svg{ transform:translateX(3px); }
+
+  /* ---------- contact ---------- */
+  .contact-wrap{
+    margin-top:54px; display:grid; grid-template-columns:1fr; gap:40px;
+  }
+  @media(min-width:820px){ .contact-wrap{ grid-template-columns:0.9fr 1.1fr; } }
+  .contact-note{
+    background:var(--panel); border:1px solid var(--hair); padding:36px; position:relative;
+    box-shadow:var(--shadow-strong);
+  }
+  .contact-note::before{
+    content:"CONFIDENTIAL"; position:absolute; top:18px; right:-38px; transform:rotate(45deg);
+    background:var(--accent); color:var(--bg); font-family:'Special Elite'; font-size:10px; letter-spacing:.14em;
+    padding:4px 44px;
+  }
+  .contact-note h3{ font-size:26px; margin-bottom:14px; }
+  .contact-note p{ color:var(--ink-dim); font-size:14.5px; line-height:1.8; margin-bottom:22px; }
+  .contact-line{ display:flex; align-items:center; gap:12px; margin-bottom:14px; font-size:14.5px; }
+  .contact-line svg{ width:17px; height:17px; fill:none; stroke:var(--accent); stroke-width:1.6; flex-shrink:0; }
+
+  form{ display:flex; flex-direction:column; gap:16px; }
+  .field{ display:flex; flex-direction:column; gap:8px; }
+  .field label{ font-family:'Special Elite'; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-dim); }
+  .field input, .field textarea{
+    background:var(--panel); border:1px solid var(--hair); color:var(--ink); padding:13px 14px;
+    font-family:'Libre Franklin'; font-size:14.5px; border-radius:2px; resize:vertical;
+    transition:border-color .2s ease;
+  }
+  .field input:focus, .field textarea:focus{ outline:none; border-color:var(--accent); }
+  form .btn-solid{ align-self:flex-start; margin-top:6px; border:none; }
+
+  /* ---------- footer ---------- */
+  footer{
+    padding:40px clamp(20px,6vw,80px) 50px; display:flex; flex-direction:column; gap:14px;
+    align-items:center; text-align:center; color:var(--ink-dim); font-size:12px;
+    border-top:1px solid var(--hair); letter-spacing:.06em;
+  }
+  footer .type{ letter-spacing:.1em; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
+  }
+
+  :focus-visible{ outline:2px solid var(--accent); outline-offset:3px; }
+</style>
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2 L13.2 8.4 L20 6 L14.6 10.4 L21 14 L14 13.2 L16 20 L12 15.4 L8 20 L10 13.2 L3 14 L9.4 10.4 L4 6 L10.8 8.4 Z"/></svg>
+    <span>LOKI<span style="color:var(--accent)">.</span></span>
+  </div>
+  <nav aria-label="Primary">
+    <ul>
+      <li><a href="#file">The File</a></li>
+      <li><a href="#arsenal">Arsenal</a></li>
+      <li><a href="#cases">Case Files</a></li>
+      <li><a href="#contact">Make Contact</a></li>
+    </ul>
+  </nav>
+  <button class="lamp-toggle" id="themeToggle" aria-pressed="false" aria-label="Toggle light and dark mode">
+    <span class="label" id="themeLabel">Night Shift</span>
+    <span class="switch">
+      <span class="bulb">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="var(--bg)"/></svg>
+      </span>
+    </span>
+  </button>
+</header>
+
+<!-- ================= HERO ================= -->
+<section class="hero" id="top">
+  <canvas id="webCanvas" aria-hidden="true"></canvas>
+  <div class="spider" id="spider" aria-hidden="true">
+    <svg viewBox="0 0 64 64"><g><ellipse cx="32" cy="36" rx="9" ry="12"/><circle cx="32" cy="20" r="6"/>
+    <path d="M32 30 L14 18 M32 30 L10 30 M32 30 L14 44 M32 30 L50 18 M32 30 L54 30 M32 30 L50 44" stroke="currentColor" stroke-width="2" fill="none"/></g></svg>
+  </div>
+
+  <div class="hero-inner">
+    <span class="case-tag type">CASE NO. 001 — OPEN FILE</span>
+    <h1>WEB &amp;<br><span>WITNESS.</span></h1>
+    <div class="role">Full&#8209;Stack Developer</div>
+    <p class="tag">I build the quiet machinery behind the pages people trust — spinning data into something you can stand on, one clean thread at a time. Based out of the sprawl, working the night shift.</p>
+    <div class="hero-cta">
+      <a href="#cases" class="btn btn-solid">View Case Files</a>
+      <a href="#contact" class="btn btn-ghost">Open a Line</a>
+    </div>
+  </div>
+
+  <div class="scroll-cue type">DESCEND</div>
+</section>
+
+<!-- ================= ABOUT / DOSSIER ================= -->
+<section id="file">
+  <div class="eyebrow">01 — Subject Profile</div>
+  <h2 class="section-title">The Case File</h2>
+  <p class="section-lead">Everything on record. Pulled from the archive, dusted for prints, laid out straight — no embellishment, just the facts of the work.</p>
+
+  <div class="dossier">
+    <span class="dossier-stamp">ON FILE</span>
+    <div class="dossier-photo">
+      <div class="photo-frame">
+        <span class="tape left"></span>
+        <span class="tape right"></span>
+        <!-- Swap the src below for your own photo. The grayscale filter in CSS
+             (.photo-frame img) keeps any photo on-theme automatically. -->
+        <img src="https://placehold.co/460x600/1c1c1c/9a9a9a?text=YOUR+PHOTO&font=roboto" alt="Portrait of Loki">
+      </div>
+      <div class="photo-caption type">SUBJECT ON RECORD — CASE NO. 001</div>
+    </div>
+    <div class="dossier-body">
+      <h3>Loki</h3>
+      <div class="subline type">FULL-STACK DEVELOPER · DATA &amp; REPORTING</div>
+      <p>Works the seams between front end and back end — comfortable wiring up interfaces in React and building the services underneath them in NestJS. Spends a fair share of the night hours in BigQuery and Colab, turning raw ledgers of transaction data into sales reports that hold up under scrutiny.</p>
+      <p>Currently casing a new territory: AI engineering. Every project on file is a step toward that line of work — treated with the same discipline as the rest of the caseload.</p>
+      <div class="file-facts">
+        <div><div class="k">Status</div><div class="v">Active — Junior Developer</div></div>
+        <div><div class="k">Core Tools</div><div class="v">React · NestJS · PostgreSQL</div></div>
+        <div><div class="k">Field Work</div><div class="v">BigQuery · Google Colab</div></div>
+        <div><div class="k">Next Move</div><div class="v">AI Engineering</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ARSENAL / SKILLS ================= -->
+<section id="arsenal">
+  <div class="eyebrow">02 — Tools of the Trade</div>
+  <h2 class="section-title">The Arsenal</h2>
+  <p class="section-lead">Every operator has a kit. Here's what's loaded, cleaned, and ready when a case calls for it.</p>
+
+  <div class="arsenal-grid">
+    <div class="weapon-card">
+      <div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></div>
+      <h4>React</h4>
+      <div class="caliber type">INTERFACE — .JSX ROUNDS</div>
+    </div>
+    <div class="weapon-card">
+      <div class="icon"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12h8M12 8v8"/></svg></div>
+      <h4>NestJS</h4>
+      <div class="caliber type">BACKEND — SERVER-SIDE</div>
+    </div>
+    <div class="weapon-card">
+      <div class="icon"><svg viewBox="0 0 24 24"><path d="M4 6c0-1.5 3.5-2.5 8-2.5s8 1 8 2.5-3.5 2.5-8 2.5-8-1-8-2.5Z"/><path d="M4 6v12c0 1.5 3.5 2.5 8 2.5s8-1 8-2.5V6"/><path d="M4 12c0 1.5 3.5 2.5 8 2.5s8-1 8-2.5"/></svg></div>
+      <h4>PostgreSQL</h4>
+      <div class="caliber type">STORAGE — LONG MAGAZINE</div>
+    </div>
+    <div class="weapon-card">
+      <div class="icon"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20V13"/></svg></div>
+      <h4>BigQuery</h4>
+      <div class="caliber type">ANALYTICS — LONG RANGE</div>
+    </div>
+    <div class="weapon-card">
+      <div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg></div>
+      <h4>Google Colab</h4>
+      <div class="caliber type">SCRIPTING — RAPID FIRE</div>
+    </div>
+    <div class="weapon-card">
+      <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z"/></svg></div>
+      <h4>AI Engineering</h4>
+      <div class="caliber type">IN TRAINING — NEW ISSUE</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CASE FILES / PROJECTS ================= -->
+<section id="cases">
+  <div class="eyebrow">03 — Evidence Board</div>
+  <h2 class="section-title">Open Case Files</h2>
+  <p class="section-lead">Pinned, threaded, and still under investigation. A sample of the work connecting one clue to the next.</p>
+
+  <div class="corkboard">
+    <canvas id="stringCanvas" aria-hidden="true"></canvas>
+    <div class="cases" id="caseGrid">
+      <div class="case-card" data-pin>
+        <span class="pin"></span>
+        <div class="num type">FILE — 01</div>
+        <h4>Sales-Per-Agent Ledger</h4>
+        <p>A daily reporting pipeline pulling raw lottery transaction data through BigQuery and Colab, surfaced as a clean sales-per-agent breakdown for the business side to trust.</p>
+        <div class="tagset"><span>BigQuery</span><span>Colab</span><span>SQL</span></div>
+        <a href="#" class="case-link">Read the File <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+      <div class="case-card" data-pin>
+        <span class="pin"></span>
+        <div class="num type">FILE — 02</div>
+        <h4>Schema Audit — s_phlot</h4>
+        <p>A deep review of the lottery platform's database schema, tracing data integrity issues back to their source before they could compromise a report downstream.</p>
+        <div class="tagset"><span>PostgreSQL</span><span>Data Integrity</span></div>
+        <a href="#" class="case-link">Read the File <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+      <div class="case-card" data-pin>
+        <span class="pin"></span>
+        <div class="num type">FILE — 03</div>
+        <h4>Travly — Trip Planner Concept</h4>
+        <p>An AI-assisted trip planner, sketched from the mobile UI up — a side case worked after hours, built to test ideas before they hit a bigger stack.</p>
+        <div class="tagset"><span>React</span><span>Mobile UI</span><span>AI</span></div>
+        <a href="#" class="case-link">Read the File <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CONTACT ================= -->
+<section id="contact">
+  <div class="eyebrow">04 — Get in Touch</div>
+  <h2 class="section-title">Make Contact</h2>
+  <p class="section-lead">Got a case worth taking? Leave word below, or reach out direct. I keep the line open.</p>
+
+  <div class="contact-wrap">
+    <div class="contact-note">
+      <h3>Leave a Message</h3>
+      <p>Every good detective needs a way to be reached. Drop a line about the work, the role, or the case you have in mind.</p>
+      <div class="contact-line">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="M4 7l8 6 8-6"/></svg>
+        <span>contact@lokidev.io</span>
+      </div>
+      <div class="contact-line">
+        <svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.9.7 2.7a2 2 0 0 1-.4 2.1L8.1 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.7.7a2 2 0 0 1 1.8 2Z"/></svg>
+        <span>+63 900 000 0000</span>
+      </div>
+      <div class="contact-line">
+        <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span>Manila, Philippines</span>
+      </div>
+    </div>
+
+    <form onsubmit="event.preventDefault(); alert('Message logged — mockup only.');">
+      <div class="field">
+        <label for="name">Name</label>
+        <input id="name" type="text" placeholder="Detective, or otherwise" required>
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="you@agency.com" required>
+      </div>
+      <div class="field">
+        <label for="message">The Tip</label>
+        <textarea id="message" rows="5" placeholder="What's the case?" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-solid">Send It In</button>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="type">© 2026 LOKI — ALL CASES CLOSED ON REQUEST</div>
+  <div>Built in the dark. Reads fine in the light.</div>
+</footer>
+
+<script>
+(function(){
+  /* ---------------- THEME TOGGLE ---------------- */
+  const root = document.documentElement;
+  const toggle = document.getElementById('themeToggle');
+  const label = document.getElementById('themeLabel');
+
+  function setTheme(theme){
+    root.setAttribute('data-theme', theme);
+    toggle.setAttribute('aria-pressed', theme === 'day');
+    label.textContent = theme === 'day' ? 'Daylight Case' : 'Night Shift';
+  }
+  setTheme('night');
+
+  toggle.addEventListener('click', () => {
+    const next = root.getAttribute('data-theme') === 'day' ? 'night' : 'day';
+    setTheme(next);
+  });
+
+  /* ---------------- HERO WEB CANVAS ---------------- */
+  const canvas = document.getElementById('webCanvas');
+  const ctx = canvas.getContext('2d');
+  let w, h, anchors = [];
+
+  function styleColor(varName, fallbackAlpha){
+    return getComputedStyle(root).getPropertyValue(varName).trim();
+  }
+
+  function buildWeb(){
+    w = canvas.width = canvas.offsetWidth;
+    h = canvas.height = canvas.offsetHeight;
+    anchors = [
+      {x: 0, y: 0}, {x: w, y: 0}, {x: w*0.5, y: 0},
+      {x: 0, y: h*0.35}, {x: w, y: h*0.35}
+    ];
+  }
+
+  function drawWeb(t){
+    ctx.clearRect(0,0,w,h);
+    const centerX = w*0.5, centerY = h*0.08 + Math.sin(t/4000)*6;
+    const lineColor = styleColor('--web-line');
+    const lineStrong = styleColor('--web-line-strong');
+
+    // radiating strands
+    ctx.lineWidth = 1;
+    anchors.forEach((a, i) => {
+      ctx.strokeStyle = i % 2 === 0 ? lineStrong : lineColor;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      const swayX = Math.sin(t/2600 + i) * 4;
+      ctx.lineTo(centerX + swayX, centerY);
+      ctx.stroke();
+    });
+
+    // concentric arcs connecting strands (spiral rings)
+    const rings = 5;
+    for(let r = 1; r <= rings; r++){
+      ctx.strokeStyle = lineColor;
+      ctx.beginPath();
+      const radius = r * (Math.max(w,h) * 0.09);
+      for(let i = 0; i <= anchors.length; i++){
+        const a = anchors[i % anchors.length];
+        const dx = a.x - centerX, dy = a.y - centerY;
+        const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+        const px = centerX + (dx/dist) * Math.min(radius, dist);
+        const py = centerY + (dy/dist) * Math.min(radius, dist);
+        const sway = Math.sin(t/3000 + r + i) * 3;
+        if(i === 0) ctx.moveTo(px + sway, py); else ctx.lineTo(px + sway, py);
+      }
+      ctx.stroke();
+    }
+  }
+
+  function loop(t){
+    drawWeb(t);
+    requestAnimationFrame(loop);
+  }
+  buildWeb();
+  requestAnimationFrame(loop);
+  window.addEventListener('resize', buildWeb);
+
+  /* ---------------- CRAWLING SPIDER ---------------- */
+  const spider = document.getElementById('spider');
+  function crawl(){
+    const heroW = document.querySelector('.hero').offsetWidth;
+    const startX = Math.random() * heroW;
+    const endY = 80 + Math.random() * 160;
+    spider.style.transition = 'none';
+    spider.style.left = startX + 'px';
+    spider.style.top = '-30px';
+    spider.style.opacity = '0';
+    requestAnimationFrame(() => {
+      spider.style.transition = `top ${4 + Math.random()*3}s cubic-bezier(.4,0,.2,1), opacity .6s ease`;
+      spider.style.top = endY + 'px';
+      spider.style.opacity = '.9';
+    });
+    setTimeout(() => {
+      spider.style.transition = 'top 2.5s ease-in, opacity 1.5s ease 1s';
+      spider.style.top = '-30px';
+      spider.style.opacity = '0';
+    }, 6000 + Math.random()*1500);
+  }
+  crawl();
+  setInterval(crawl, 11000);
+
+  /* ---------------- CORKBOARD RED STRING ---------------- */
+  const stringCanvas = document.getElementById('stringCanvas');
+  const sctx = stringCanvas.getContext('2d');
+  const board = document.querySelector('.corkboard');
+
+  function drawStrings(){
+    const rect = board.getBoundingClientRect();
+    stringCanvas.width = board.offsetWidth;
+    stringCanvas.height = board.offsetHeight;
+    sctx.clearRect(0,0,stringCanvas.width, stringCanvas.height);
+
+    const pins = Array.from(document.querySelectorAll('[data-pin] .pin')).map(p => {
+      const r = p.getBoundingClientRect();
+      return { x: r.left - rect.left + r.width/2, y: r.top - rect.top + r.height/2 };
+    });
+
+    sctx.strokeStyle = getComputedStyle(root).getPropertyValue('--accent').trim();
+    sctx.globalAlpha = 0.55;
+    sctx.lineWidth = 1.4;
+
+    for(let i = 0; i < pins.length - 1; i++){
+      const a = pins[i], b = pins[i+1];
+      const midX = (a.x + b.x)/2, midY = Math.max(a.y, b.y) + 26;
+      sctx.beginPath();
+      sctx.moveTo(a.x, a.y);
+      sctx.quadraticCurveTo(midX, midY, b.x, b.y);
+      sctx.stroke();
+    }
+  }
+  window.addEventListener('load', drawStrings);
+  window.addEventListener('resize', drawStrings);
+  toggle.addEventListener('click', () => setTimeout(drawStrings, 60));
+  setTimeout(drawStrings, 300);
+})();
+</script>
+</body>
+</html>
