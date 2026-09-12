@@ -1,40 +1,48 @@
 import { Code2 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
-  FaAngular,
-  FaBootstrap,
-  FaCss3Alt,
   FaGitAlt,
-  FaHtml5,
   FaJs,
-  FaPhp,
   FaReact,
 } from "react-icons/fa";
 import {
-  SiExpress,
-  SiMongodb,
-  SiMysql,
-  SiPostman,
+  SiCloudflare,
+  SiCloudflareworkers,
+  SiGithub,
+  SiGithubactions,
+  SiGooglebigquery,
+  SiGooglecloud,
+  SiJsonwebtokens,
+  SiMui,
+  SiNestjs,
+  SiNextdotjs,
+  SiNodedotjs,
+  SiPostgresql,
   SiTailwindcss,
   SiTypescript,
+  SiVuedotjs,
 } from "react-icons/si";
 import { skillGroups } from "@/data/portfolio";
 
 const skillIcons = {
-  Angular: FaAngular,
-  "Bootstrap": FaBootstrap,
-  "CSS3": FaCss3Alt,
   Git: FaGitAlt,
-  HTML5: FaHtml5,
   JavaScript: FaJs,
-  PHP: FaPhp,
   React: FaReact,
-  Express: SiExpress,
-  MongoDB: SiMongodb,
-  MySQL: SiMysql,
-  Postman: SiPostman,
+  "Next.js": SiNextdotjs,
+  "Vue.js": SiVuedotjs,
+  "Material UI": SiMui,
   "Tailwind CSS": SiTailwindcss,
   TypeScript: SiTypescript,
+  "Node.js": SiNodedotjs,
+  NestJS: SiNestjs,
+  "Cloudflare Workers": SiCloudflareworkers,
+  PostgreSQL: SiPostgresql,
+  BigQuery: SiGooglebigquery,
+  "Google Cloud Platform": SiGooglecloud,
+  Cloudflare: SiCloudflare,
+  "GitHub Actions": SiGithubactions,
+  GitHub: SiGithub,
+  JWT: SiJsonwebtokens,
 };
 
 export function Skills() {
@@ -53,8 +61,7 @@ export function Skills() {
         The Arsenal
       </h2>
       <p className="section-lead">
-        Grouped for quick scanning, with labels kept visible because recruiters
-        read faster than icons.
+        Technologies I use across frontend, backend, data, cloud, and testing.
       </p>
 
       <div className="arsenal-grid">

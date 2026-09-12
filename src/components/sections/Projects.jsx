@@ -1,6 +1,7 @@
 import { ArrowRight, FolderOpen } from "lucide-react";
 import { motion } from "framer-motion";
-import { projects } from "@/data/portfolio";
+import { personalProjects } from "@/data/portfolio";
+import { ProjectCard } from "@/components/projects/ProjectCard";
 
 export function Projects() {
   return (
@@ -26,38 +27,16 @@ export function Projects() {
         <div className="string string-one" aria-hidden="true" />
         <div className="string string-two" aria-hidden="true" />
         <div className="case-grid">
-          {projects.map((project) => (
-            <motion.article
-              className="case-card"
-              key={project.name}
-              whileHover={{ y: -6, rotate: -0.4 }}
-              transition={{ type: "spring", stiffness: 220, damping: 16 }}
-            >
-              <span className="pin" aria-hidden="true" />
-              <div className="num type">{project.number}</div>
-              <h3>{project.name}</h3>
-              <p className="case-category type">{project.category}</p>
-              <p>{project.description}</p>
-              <p className="case-role">
-                <span className="type">Role</span> {project.role}
-              </p>
-              <div className="tagset">
-                {project.tech.map((tech) => (
-                  <span key={tech}>{tech}</span>
-                ))}
-              </div>
-              <a
-                className="case-link"
-                href={project.repo}
-                target="_blank"
-                rel="noreferrer"
-              >
-                View Repository
-                <ArrowRight />
-              </a>
-            </motion.article>
+          {personalProjects.slice(0, 3).map((project) => (
+            <ProjectCard project={project} key={project.name} />
           ))}
         </div>
+      </div>
+      <div className="projects-footer">
+        <a className="noir-button noir-button-ghost" href="/all-projects">
+          View All Projects
+          <ArrowRight />
+        </a>
       </div>
     </motion.section>
   );

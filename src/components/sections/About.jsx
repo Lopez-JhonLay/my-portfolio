@@ -1,6 +1,6 @@
 import { User } from "lucide-react";
 import { motion } from "framer-motion";
-import profilePhoto from "@/assets/profile.png";
+import profilePhoto from "@/assets/profile.jpg";
 import { about, profile } from "@/data/portfolio";
 
 const PHOTO_WEB_HUB = { x: 360, y: 120 };

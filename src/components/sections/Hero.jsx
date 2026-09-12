@@ -82,13 +82,13 @@ export function Hero() {
         <div className="noir-hero-copy">
           <span className="case-tag type">Case No. 001 - Open File</span>
           <h1>{profile.heroTitle}</h1>
-          <p className="role">{profile.role}</p>
+          <p className="role">{profile.heroRole}</p>
           <p className="tag">{profile.heroTag}</p>
 
           <div className="hero-cta">
-            <a className="noir-button noir-button-solid" href={profile.resumeUrl} download>
+            <a className="noir-button noir-button-solid" href={profile.portfolioUrl} download>
               <FileText />
-              Download CV
+              Download Portfolio
             </a>
           </div>
         </div>

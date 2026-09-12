@@ -7,6 +7,21 @@ import { Projects } from "@/components/sections/Projects";
 import { Experience } from "@/components/sections/Experience";
 import { Skills } from "@/components/sections/Skills";
 import { Contact } from "@/components/sections/Contact";
+import { AllProjects } from "@/components/pages/AllProjects";
+import { Route, Routes } from "react-router-dom";
+
+function HomePage() {
+  return (
+    <main>
+      <Hero />
+      <About />
+      <Projects />
+      <Experience />
+      <Skills />
+      <Contact />
+    </main>
+  );
+}
 
 function App() {
   return (
@@ -14,14 +29,10 @@ function App() {
       <div className="grain" aria-hidden="true" />
       <div className="vignette" aria-hidden="true" />
       <Navbar />
-      <main>
-        <Hero />
-        <About />
-        <Projects />
-        <Experience />
-        <Skills />
-        <Contact />
-      </main>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/all-projects" element={<AllProjects />} />
+      </Routes>
       <Footer />
     </ThemeProvider>
   );

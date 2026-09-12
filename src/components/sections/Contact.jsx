@@ -1,5 +1,5 @@
 import { FaFacebook, FaGithub, FaLinkedin } from "react-icons/fa";
-import { Mail, MapPin } from "lucide-react";
+import { ArrowUpRight, Mail, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import { profile, socialLinks } from "@/data/portfolio";
 
@@ -54,8 +54,16 @@ export function Contact() {
                 target="_blank"
                 rel="noreferrer"
               >
-                {Icon ? <Icon aria-hidden="true" /> : null}
-                <span>{link.label}</span>
+                <span className="social-card-inner">
+                  <span className="social-card-face social-card-front">
+                    {Icon ? <Icon aria-hidden="true" /> : null}
+                    <span>{link.label}</span>
+                  </span>
+                  <span className="social-card-face social-card-back" aria-hidden="true">
+                    <ArrowUpRight />
+                    <span>Visit {link.label}</span>
+                  </span>
+                </span>
               </a>
             );
           })}

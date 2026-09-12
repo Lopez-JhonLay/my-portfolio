@@ -8,7 +8,7 @@ export function Navbar() {
 
   return (
     <header className="noir-nav">
-      <a className="noir-brand" href="#home" onClick={() => setIsOpen(false)}>
+      <a className="noir-brand" href="/#home" onClick={() => setIsOpen(false)}>
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path
             fill="currentColor"

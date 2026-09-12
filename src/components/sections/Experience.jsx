@@ -18,8 +18,7 @@ export function Experience() {
         Timeline
       </h2>
       <p className="section-lead">
-        A structured record of recent roles, school work, and project
-        responsibility.
+        A record of my professional experience and education.
       </p>
 
       <div className="timeline">

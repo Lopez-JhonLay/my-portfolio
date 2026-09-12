@@ -6,7 +6,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        geist: ["Geist", "sans-serif"],
+        sans: ["Barlow Condensed", "sans-serif"],
       },
       borderRadius: {
         lg: "var(--radius)",

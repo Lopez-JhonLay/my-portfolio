@@ -1,10 +1,13 @@
+import portfolioPdf from '@/assets/Lopez_Jhon_Lay_CV_2026.pdf';
+
 export const profile = {
   name: 'Jhon Lay Lopez',
   brand: 'Lopez.',
   role: 'Application Developer to Software Engineer',
+  heroRole: 'Application Developer',
   location: 'Pasay, Philippines',
   email: 'jhonlaylopez.2003@gmail.com',
-  resumeUrl: '/Lopez_Jhon_Lay.pdf',
+  portfolioUrl: portfolioPdf,
   heroTitle: 'Web & Mobile',
   heroTag:
     'I build practical web and mobile applications with clean interfaces, dependable workflows, and a growing focus on AI and DevOps.',
@@ -12,12 +15,12 @@ export const profile = {
 };
 
 export const navItems = [
-  { label: 'Home', href: '#home' },
-  { label: 'About', href: '#about' },
-  { label: 'Projects', href: '#projects' },
-  { label: 'Experience', href: '#experience' },
-  { label: 'Skills', href: '#skills' },
-  { label: 'Contact', href: '#contact' },
+  { label: 'Home', href: '/#home' },
+  { label: 'About', href: '/#about' },
+  { label: 'Projects', href: '/#projects' },
+  { label: 'Experience', href: '/#experience' },
+  { label: 'Skills', href: '/#skills' },
+  { label: 'Contact', href: '/#contact' },
 ];
 
 export const about = {
@@ -38,89 +41,119 @@ export const about = {
   ],
 };
 
-export const projects = [
+export const personalProjects = [
   {
     number: 'File 01',
-    name: 'Barangay Information System',
-    category: 'Capstone',
+    name: 'Ya Gameela',
+    category: 'Personal Project',
     description:
-      'Integrated information system for Brgy. Central Bicutan, Taguig, focused on practical local-service workflows.',
+      'A product catalog and custom content management system for a lifestyle brand, built around storefront and publishing workflows.',
+    tech: ['Next.js', 'TypeScript', 'Prisma', 'Neon', 'Cloudinary'],
+    repo: 'https://github.com/Lopez-JhonLay/ya-gameela',
+    liveUrl: 'https://ya-gameela-web.vercel.app/',
+  },
+  {
+    number: 'File 02',
+    name: 'DevFlow',
+    category: 'Personal Project',
+    description:
+      'A full-stack developer workspace for organizing projects, Markdown documentation, assets, and reusable code snippets.',
+    tech: ['React', 'NestJS', 'PostgreSQL'],
+    repo: 'https://github.com/Lopez-JhonLay/devflow',
+    liveUrl: 'https://devflow-five-iota.vercel.app/login',
+  },
+  {
+    number: 'File 03',
+    name: 'Rental Bill Management System',
+    category: 'Personal Project',
+    description:
+      'A rental management app for tracking units, tenants, utility readings, and monthly bills with saved rate details.',
+    tech: ['React', 'NestJS', 'Prisma'],
+    repo: 'https://github.com/Lopez-JhonLay/rental-bill-management-system',
+    liveUrl: 'https://rental-bill-management-system.vercel.app/',
+  },
+  {
+    number: 'File 04',
+    name: 'Classroom Randomizer',
+    category: 'Personal Project',
+    description:
+      'A classroom tool for managing student lists and selecting students fairly with an animated result.',
+    tech: ['Next.js', 'Prisma', 'PostgreSQL'],
+    repo: 'https://github.com/Lopez-JhonLay/classroom-randomizer',
+    liveUrl: 'https://classroom-randomizer.vercel.app/',
+  },
+];
+
+export const capstoneProjects = [
+  {
+    number: 'File 06',
+    name: 'Barangay Information System',
+    category: 'Capstone Project',
+    description:
+      'A team-built information system for Brgy. Central Bicutan, Taguig, focused on practical local-service workflows.',
     role: 'Capstone contributor',
     tech: ['React', 'Full-stack', 'Records'],
     repo: 'https://github.com/PUPT-2025-CAPRO-BIS',
   },
+];
+
+export const workProjects = [
   {
-    number: 'File 02',
-    name: 'PUPConnect',
-    category: 'App Development',
+    number: 'File 05',
+    name: 'LottoMatik Marketing Website',
+    category: 'Work Project',
     description:
-      'Job listing and job hunting application designed for PUP students to discover opportunities more easily.',
-    role: 'Project Manager',
-    tech: ['Angular', 'TypeScript', 'Student Jobs'],
-    repo: 'https://github.com/PUP-BSIT/project-devdynasty',
-  },
-  {
-    number: 'File 03',
-    name: 'Ecommerce Seller Side',
-    category: 'Web Development',
-    description: 'Seller-side ecommerce module integrated with related services for product and order workflows.',
-    role: 'Technical Lead',
-    tech: ['React', 'Tailwind', 'Services'],
-    repo: 'https://github.com/PUP-BSIT/project-fusion',
+      'Developed and maintained responsive public pages and interactive features, including an Agent Locator with Google Maps, location search, filtering, and API-driven agent data.',
+    role: 'Application Developer at DFNN Inc.',
+    tech: ['Next.js', 'Material UI', 'Google Maps API'],
+    liveUrl: 'https://lottomatik.com/',
   },
 ];
 
 export const experience = [
   {
-    role: 'Web Development Cadet',
-    organization: 'Google Developer Groups on Campus - PUP',
-    location: 'PUP-Manila',
-    date: '2025',
-    detail: 'Built stronger web development fundamentals through community-led training and project practice.',
+    role: 'Application Developer',
+    organization: 'DFNN Inc.',
+    location: 'BGC, Taguig City',
+    date: 'September 2025 - Present',
+    detail: 'Built full-stack LottoMatik features and automated agent sales and lottery reporting with BigQuery and Google Cloud Platform.',
   },
   {
-    role: 'Project Manager',
-    organization: 'App Development Project',
-    location: 'PUP-Taguig',
-    date: '2024',
-    detail: 'Coordinated project flow and helped guide delivery for a student-focused application.',
-  },
-  {
-    role: 'Technical Lead',
-    organization: 'Web Development Project',
-    location: 'PUP-Taguig',
-    date: '2023',
-    detail: 'Led technical direction and implementation choices for a collaborative web project.',
+    role: 'Frontend Developer Intern',
+    organization: 'DigiPlus Interactive Corp.',
+    location: 'BGC, Taguig City',
+    date: 'March 2025 - June 2025',
+    detail: 'Developed responsive Vue.js interfaces, reusable components, and API-integrated workflows with Element Plus and Pinia.',
   },
   {
     role: 'BS in Information Technology',
     organization: 'Polytechnic University of the Philippines',
     location: 'PUP-Taguig',
-    date: '2021 - Present',
-    detail: 'Studying software development, systems, databases, and applied IT practices.',
+    date: '2021 - 2025',
+    detail: 'Completed a Bachelor of Science in Information Technology.',
   },
 ];
 
 export const skillGroups = [
   {
     category: 'Frontend',
-    skills: ['React', 'Angular', 'Tailwind CSS', 'Bootstrap'],
+    skills: ['TypeScript', 'JavaScript', 'React', 'Next.js', 'Vue.js', 'Material UI', 'Tailwind CSS'],
   },
   {
     category: 'Backend',
-    skills: ['PHP', 'Express'],
+    skills: ['Node.js', 'NestJS', 'REST APIs', 'Cloudflare Workers'],
   },
   {
-    category: 'Database',
-    skills: ['MySQL', 'MongoDB'],
+    category: 'Databases & Data',
+    skills: ['PostgreSQL', 'Cloudflare D1', 'BigQuery'],
   },
   {
-    category: 'Tools',
-    skills: ['Git', 'Postman'],
+    category: 'Cloud & DevOps',
+    skills: ['Google Cloud Platform', 'Cloudflare', 'GitHub Actions'],
   },
   {
-    category: 'Languages',
-    skills: ['JavaScript', 'TypeScript', 'HTML5', 'CSS3'],
+    category: 'Testing & Tools',
+    skills: ['Playwright', 'Git', 'GitHub', 'OAuth', 'JWT'],
   },
 ];
 

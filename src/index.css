@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Libre+Franklin:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Special+Elite&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Bebas+Neue&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -111,7 +111,7 @@
     overflow-x: hidden;
     background: var(--noir-bg);
     color: var(--noir-ink);
-    font-family: "Libre Franklin", sans-serif;
+    font-family: "Barlow Condensed", sans-serif;
     transition:
       background 0.5s ease,
       color 0.5s ease;
@@ -127,12 +127,20 @@
     text-decoration: none;
   }
 
+  button,
+  input,
+  textarea,
+  select {
+    font-family: inherit;
+  }
+
   h1,
   h2,
   h3 {
     font-family: "Bebas Neue", sans-serif;
     font-weight: 400;
     letter-spacing: 0.03em;
+    text-transform: uppercase;
   }
 
   :focus-visible {
@@ -142,10 +150,6 @@
 }
 
 @layer components {
-  .type {
-    font-family: "Special Elite", cursive;
-  }
-
   .grain,
   .vignette {
     position: fixed;
@@ -196,10 +200,8 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    font-family: "Bebas Neue", sans-serif;
     font-size: 1.45rem;
     letter-spacing: 0.08em;
-    text-transform: uppercase;
   }
 
   .noir-brand svg {
@@ -213,7 +215,6 @@
     color: var(--noir-ink-dim);
     font-size: 0.78rem;
     letter-spacing: 0.14em;
-    text-transform: uppercase;
   }
 
   .noir-desktop-nav a {
@@ -285,7 +286,6 @@
     color: var(--noir-ink-dim);
     font-size: 0.8rem;
     letter-spacing: 0.14em;
-    text-transform: uppercase;
   }
 
   .noir-mobile-nav a:hover {
@@ -307,7 +307,6 @@
     cursor: pointer;
     font-size: 0.67rem;
     letter-spacing: 0.16em;
-    text-transform: uppercase;
   }
 
   .pull-label {
@@ -524,7 +523,6 @@
     color: var(--noir-accent-soft);
     font-size: 0.75rem;
     letter-spacing: 0.22em;
-    text-transform: uppercase;
     transform: rotate(-1.2deg);
   }
 
@@ -534,7 +532,6 @@
     color: var(--noir-ink);
     font-size: clamp(4.5rem, 14vw, 9.5rem);
     line-height: 0.88;
-    text-transform: uppercase;
     text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
   }
 
@@ -543,7 +540,6 @@
     color: var(--noir-ink-dim);
     font-size: clamp(0.9rem, 2vw, 1.05rem);
     letter-spacing: 0.28em;
-    text-transform: uppercase;
   }
 
   .location {
@@ -586,7 +582,6 @@
     font-size: 0.76rem;
     font-weight: 600;
     letter-spacing: 0.14em;
-    text-transform: uppercase;
     transition:
       transform 0.2s ease,
       box-shadow 0.2s ease,
@@ -654,7 +649,6 @@
     height: 100%;
     border-radius: inherit;
     object-fit: cover;
-    filter: grayscale(1) contrast(1.15) brightness(0.92);
   }
 
   .tape {
@@ -683,7 +677,6 @@
     font-size: 0.72rem;
     letter-spacing: 0.1em;
     text-align: center;
-    text-transform: uppercase;
   }
 
   .scroll-cue {
@@ -698,7 +691,6 @@
     color: var(--noir-ink-dim);
     font-size: 0.66rem;
     letter-spacing: 0.2em;
-    text-transform: uppercase;
     transform: translateX(-50%);
   }
 
@@ -736,7 +728,6 @@
     color: var(--noir-accent);
     font-size: 0.75rem;
     letter-spacing: 0.22em;
-    text-transform: uppercase;
   }
 
   .eyebrow::before {
@@ -753,7 +744,6 @@
     margin: 0 0 18px;
     font-size: clamp(2.4rem, 6vw, 4rem);
     line-height: 1;
-    text-transform: uppercase;
   }
 
   .section-title svg {
@@ -829,7 +819,6 @@
     color: var(--noir-accent-soft);
     font-size: 0.78rem;
     letter-spacing: 0.1em;
-    text-transform: uppercase;
   }
 
   .dossier-body p {
@@ -857,7 +846,6 @@
     color: var(--noir-ink-dim);
     font-size: 0.66rem;
     letter-spacing: 0.14em;
-    text-transform: uppercase;
   }
 
   .file-facts .v {
@@ -907,6 +895,51 @@
     gap: 32px;
   }
 
+  .projects-footer {
+    display: flex;
+    justify-content: center;
+    margin-top: 32px;
+  }
+
+  .back-projects-link {
+    margin-top: 0;
+  }
+
+  .project-group {
+    margin-top: 88px;
+  }
+
+  .all-projects-page .project-group:first-of-type {
+    margin-top: 56px;
+  }
+
+  .project-group h2 {
+    margin: 0;
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 1;
+  }
+
+  .project-group .corkboard {
+    margin-top: 28px;
+  }
+
+  .all-project-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .work-projects-placeholder {
+    margin-top: 28px;
+    padding: 36px;
+    border: 1px dashed var(--noir-hair);
+    border-radius: var(--noir-radius-panel);
+    background: var(--noir-bg-soft);
+    color: var(--noir-ink-dim);
+  }
+
+  .work-projects-placeholder p {
+    margin: 0;
+  }
+
   .case-card,
   .weapon-card,
   .contact-note,
@@ -941,7 +974,6 @@
     color: var(--noir-accent-soft);
     font-size: 0.7rem;
     letter-spacing: 0.12em;
-    text-transform: uppercase;
   }
 
   .case-card h3 {
@@ -978,10 +1010,8 @@
     border: 1px solid var(--noir-hair);
     border-radius: var(--noir-radius-pill);
     color: var(--noir-ink-dim);
-    font-family: "Special Elite", cursive;
     font-size: 0.68rem;
     letter-spacing: 0.08em;
-    text-transform: uppercase;
   }
 
   .tagset span {
@@ -996,7 +1026,6 @@
     font-size: 0.76rem;
     font-weight: 600;
     letter-spacing: 0.1em;
-    text-transform: uppercase;
   }
 
   .case-link svg {
@@ -1054,7 +1083,6 @@
     color: var(--noir-accent-soft);
     font-size: 0.72rem;
     letter-spacing: 0.14em;
-    text-transform: uppercase;
   }
 
   .timeline h3 {
@@ -1071,7 +1099,8 @@
 
   .arsenal-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-rows: minmax(210px, auto);
     gap: 2px;
     margin-top: 54px;
     padding: 2px;
@@ -1088,6 +1117,10 @@
     transition:
       background 0.25s ease,
       transform 0.25s ease;
+  }
+
+  .weapon-card:first-child {
+    grid-row: span 2;
   }
 
   .weapon-card:hover {
@@ -1138,14 +1171,13 @@
   }
 
   .contact-note::before {
-    content: "CONFIDENTIAL";
+    content: "Confidential";
     position: absolute;
     top: 18px;
     right: -42px;
     padding: 4px 44px;
     background: var(--noir-accent);
     color: var(--noir-bg);
-    font-family: "Special Elite", cursive;
     font-size: 0.64rem;
     letter-spacing: 0.14em;
     transform: rotate(45deg);
@@ -1186,21 +1218,51 @@
   }
 
   .social-link {
-    display: flex;
+    position: relative;
+    display: block;
     min-height: 130px;
+    border: 0;
+    background: transparent;
+    color: var(--noir-ink);
+    perspective: 800px;
+  }
+
+  .social-card-inner {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    transform-style: preserve-3d;
+    transition: transform 0.65s cubic-bezier(0.2, 0.75, 0.2, 1);
+  }
+
+  .social-card-face {
+    position: absolute;
+    inset: 0;
+    display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 12px;
-    color: var(--noir-ink);
-    transition:
-      background 0.2s ease,
-      transform 0.2s ease;
+    border: 1px solid var(--noir-hair);
+    border-radius: inherit;
+    background: var(--noir-panel);
+    backface-visibility: hidden;
   }
 
-  .social-link:hover {
+  .social-card-back {
     background: var(--noir-panel-2);
-    transform: translateY(-3px);
+    color: var(--noir-accent);
+    transform: rotateY(180deg);
+  }
+
+  @media (hover: hover) {
+    .social-link:hover .social-card-inner {
+      transform: rotateY(180deg);
+    }
+  }
+
+  .social-link:focus-visible .social-card-inner {
+    transform: rotateY(180deg);
   }
 
   .social-link svg {
@@ -1211,7 +1273,12 @@
   .social-link span {
     font-size: 0.76rem;
     letter-spacing: 0.12em;
-    text-transform: uppercase;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .social-card-inner {
+      transition: none;
+    }
   }
 
   .noir-footer {
@@ -1247,6 +1314,10 @@
   }
 
   @media (max-width: 900px) {
+    .arsenal-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .dossier,
     .contact-wrap {
       grid-template-columns: 1fr;
@@ -1276,6 +1347,15 @@
   }
 
   @media (max-width: 560px) {
+    .arsenal-grid {
+      grid-template-columns: 1fr;
+      grid-auto-rows: auto;
+    }
+
+    .weapon-card:first-child {
+      grid-row: auto;
+    }
+
     .noir-nav {
       padding: 14px 16px;
     }
