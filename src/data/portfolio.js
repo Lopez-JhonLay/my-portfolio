@@ -2,7 +2,7 @@ import portfolioPdf from '@/assets/Lopez_Jhon_Lay_CV_2026.pdf';
 
 export const profile = {
   name: 'Jhon Lay Lopez',
-  brand: 'Lopez.',
+  brand: 'JL',
   role: 'Application Developer to Software Engineer',
   heroRole: 'Application Developer',
   location: 'Pasay, Philippines',

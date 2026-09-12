@@ -1,4 +1,5 @@
 import { Menu, X } from "lucide-react";
+import { FaSpider } from "react-icons/fa";
 import { useState } from "react";
 import { navItems, profile } from "@/data/portfolio";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
@@ -9,12 +10,7 @@ export function Navbar() {
   return (
     <header className="noir-nav">
       <a className="noir-brand" href="/#home" onClick={() => setIsOpen(false)}>
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            fill="currentColor"
-            d="M12 2l1.2 6.4L20 6l-5.4 4.4L21 14l-7-.8 2 6.8-4-4.6L8 20l2-6.8-7 .8 6.4-3.6L4 6l6.8 2.4L12 2Z"
-          />
-        </svg>
+        <FaSpider aria-hidden="true" />
         <span>{profile.brand}</span>
       </a>
 

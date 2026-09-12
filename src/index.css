@@ -1360,13 +1360,16 @@
       padding: 14px 16px;
     }
 
-    .noir-brand span {
-      display: none;
-    }
-
     .noir-hero {
       min-height: auto;
-      padding: 56px 16px 72px;
+      flex-direction: column;
+      padding: 56px 16px 42px;
+    }
+
+    .scroll-cue {
+      position: static;
+      margin-top: 38px;
+      transform: none;
     }
 
     .noir-hero h1 {
