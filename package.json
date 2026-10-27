@@ -8,6 +8,10 @@
     "node": "24.x",
     "npm": "11.x"
   },
+  "workspaces": [
+    "admin",
+    "server"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
