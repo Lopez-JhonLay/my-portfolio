@@ -16,10 +16,11 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "test": "npm run test --workspaces --if-present",
     "preview": "vite preview",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "format:check": "prettier --check package.json .prettierrc.json && npm run format:check --workspace @portfolio-cms/admin && npm run format:check --workspace @portfolio-cms/server",
-    "quality:check": "npm run lint && npm run typecheck && npm run format:check"
+    "quality:check": "npm run lint && npm run typecheck && npm run format:check && npm run test"
   },
   "dependencies": {
     "@radix-ui/react-separator": "^1.1.2",

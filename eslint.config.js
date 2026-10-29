@@ -7,7 +7,10 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 
-const typeScriptFiles = ['admin/**/*.{ts,tsx}', 'server/src/**/*.ts']
+const typeScriptFiles = [
+  'admin/**/*.{ts,tsx}',
+  'server/{src,tests}/**/*.ts',
+]
 
 export default defineConfig([
   globalIgnores([
@@ -103,7 +106,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['admin/vite.config.ts', 'server/src/**/*.ts'],
+    files: ['admin/vite.config.ts', 'server/{src,tests}/**/*.ts'],
     languageOptions: {
       globals: globals.node,
     },
