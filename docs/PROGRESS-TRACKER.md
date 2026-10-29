@@ -102,7 +102,7 @@ The repository and dependency foundation is complete locally. The admin and serv
 ### Milestone 3 — Project contracts and validation
 
 - [x] `MVP-CONTRACT-001` **IMPLEMENTED LOCALLY** — Define the canonical Project domain fields, ordering, and lifecycle states. **Depends:** None; the server-owned pure domain contract is independent of API and trust-boundary specifications. **Acceptance:** [Requirements §§5.1, 7, and 10](specs/portfolio-cms-requirements.md#51-project-compatibility-contract). **Evidence:** `server/src/projects/project-contract.ts`, colocated contract tests, and `specs/project-data-contract.md`; focused tests, repository quality checks, and public, Admin, and server builds passed on 2026-10-29.
-- [ ] `MVP-CONTRACT-002` **PROPOSED** — Define published/public Project response types and allowed fields. **Depends:** `MVP-CONTRACT-001`. **Acceptance:** [Requirements §§5.1 and 11](specs/portfolio-cms-requirements.md#11-public-delivery-and-ordinary-failures).
+- [x] `MVP-CONTRACT-002` **IMPLEMENTED LOCALLY** — Define published/public Project response types and allowed fields. **Depends:** `MVP-CONTRACT-001` (completed locally). **Acceptance:** [Requirements §§5.1 and 11](specs/portfolio-cms-requirements.md#11-public-delivery-and-ordinary-failures). **Evidence:** `server/src/projects/public-project-contract.ts` and colocated contract tests; 16 focused tests, repository quality checks with 55 tests, server build, and `git diff --check` passed on 2026-10-29.
 - [ ] `MVP-CONTRACT-003` **PROPOSED** — Define protected draft/admin response and mutation types without public leakage. **Depends:** `MVP-CONTRACT-001`, `MVP-SPEC-005`. **Acceptance:** [Requirements §§6, 8, and 14.1](specs/portfolio-cms-requirements.md#141-security).
 - [ ] `MVP-CONTRACT-004` **PROPOSED** — Implement boundary-owned Zod validation for source content fields, ordering, URLs, slugs, and operation identifiers; safe Markdown rendering remains gated by `MVP-DETAIL-002`. **Depends:** `MVP-CONTRACT-001`. **Acceptance:** [Requirements §§7 and 14.1](specs/portfolio-cms-requirements.md#7-project-descriptions-slugs-and-featured-selection).
 - [ ] `MVP-CONTRACT-005` **PROPOSED** — Implement legacy compatibility mapping for existing fields, groups, order, technology order, and links. **Depends:** `MVP-CONTRACT-001`. **Acceptance:** [Requirements §5.1](specs/portfolio-cms-requirements.md#51-project-compatibility-contract).
@@ -326,3 +326,9 @@ Files: `docs/specs/projects-api-trust-boundary.md`, `docs/PROGRESS-TRACKER.md`
 Verification: requirements traceability, Markdown trailing-whitespace scan, exact two-file scope, and `git diff --check` passed.
 Delivery: implemented locally: Yes; committed: No; pushed: No; merged: Not established; deployed: No.
 Open: Authentication/session, persistence, unresolved lifecycle, linkless-project, navigation, Markdown, preview, and migration/cutover decisions retain their recorded gates; no API, schema, authentication, database, or UI behavior was implemented.
+
+2026-10-29 — `MVP-CONTRACT-002` authorized implementation — Verified locally
+Files: `server/src/projects/public-project-contract.ts`, `server/src/projects/public-project-contract.test.ts`, `docs/PROGRESS-TRACKER.md`
+Verification: 16 focused contract tests passed; `npm run quality:check` passed with 55 tests; server build and `git diff --check` passed.
+Delivery: implemented locally: Yes; committed: No; pushed: No; merged: Not established; deployed: No.
+Open: Linkless-project presentation behavior remains unresolved under `MVP-SPEC-009`; no routes, persistence, authentication, or frontend adapters were implemented.
