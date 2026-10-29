@@ -101,7 +101,7 @@ The repository and dependency foundation is complete locally. The admin and serv
 
 ### Milestone 3 — Project contracts and validation
 
-- [ ] `MVP-CONTRACT-001` **PROPOSED** — Define the canonical Project domain fields, ordering, and lifecycle states. **Depends:** `MVP-SPEC-003`. **Acceptance:** [Requirements §§5.1, 7, and 10](specs/portfolio-cms-requirements.md#51-project-compatibility-contract).
+- [x] `MVP-CONTRACT-001` **IMPLEMENTED LOCALLY** — Define the canonical Project domain fields, ordering, and lifecycle states. **Depends:** None; the server-owned pure domain contract is independent of API and trust-boundary specifications. **Acceptance:** [Requirements §§5.1, 7, and 10](specs/portfolio-cms-requirements.md#51-project-compatibility-contract). **Evidence:** `server/src/projects/project-contract.ts`, colocated contract tests, and `specs/project-data-contract.md`; focused tests, repository quality checks, and public, Admin, and server builds passed on 2026-10-29.
 - [ ] `MVP-CONTRACT-002` **PROPOSED** — Define published/public Project response types and allowed fields. **Depends:** `MVP-CONTRACT-001`. **Acceptance:** [Requirements §§5.1 and 11](specs/portfolio-cms-requirements.md#11-public-delivery-and-ordinary-failures).
 - [ ] `MVP-CONTRACT-003` **PROPOSED** — Define protected draft/admin response and mutation types without public leakage. **Depends:** `MVP-CONTRACT-001`, `MVP-SPEC-005`. **Acceptance:** [Requirements §§6, 8, and 14.1](specs/portfolio-cms-requirements.md#141-security).
 - [ ] `MVP-CONTRACT-004` **PROPOSED** — Implement boundary-owned Zod validation for source content fields, ordering, URLs, slugs, and operation identifiers; safe Markdown rendering remains gated by `MVP-DETAIL-002`. **Depends:** `MVP-CONTRACT-001`. **Acceptance:** [Requirements §§7 and 14.1](specs/portfolio-cms-requirements.md#7-project-descriptions-slugs-and-featured-selection).
@@ -308,3 +308,9 @@ Open: blockers, risks, and next proposed task
 ```
 
 Use Asia/Manila dates. Record facts and evidence; do not use `Done` as a substitute for delivery fields.
+
+2026-10-29 — `MVP-CONTRACT-001` authorized implementation — Verified locally
+Files: `server/src/projects/project-contract.ts`, `server/src/projects/project-contract.test.ts`, `docs/specs/project-data-contract.md`, `docs/PROGRESS-TRACKER.md`
+Verification: 15 focused contract tests passed; `npm run quality:check` passed with 39 tests; server, Admin, and public builds passed; `git diff --check` passed.
+Delivery: implemented locally: Yes; committed: No; pushed: No; merged: Not established; deployed: No.
+Open: Linkless-project publication and presentation behavior remains unresolved under `MVP-SPEC-009`; no API, persistence, authentication, or UI behavior was implemented.
