@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "node --env-file-if-exists=.env --watch src/server.ts",
-    "lint": "eslint src tests",
+    "lint": "eslint src tests vitest.config.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "format:check": "prettier --check package.json tsconfig.json tsconfig.build.json src tests",
+    "format:check": "prettier --check package.json tsconfig.json tsconfig.build.json vitest.config.ts src tests",
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js"

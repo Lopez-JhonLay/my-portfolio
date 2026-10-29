@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { createEnvironmentFixture } from "../../tests/fixtures/environment-fixture.ts";
 import { validateEnvironment } from "./environment.ts";
 
 describe("validateEnvironment", () => {
@@ -11,7 +12,9 @@ describe("validateEnvironment", () => {
   });
 
   it.each(["1", "5175", "65535"])("accepts local port %s", (port) => {
-    expect(validateEnvironment({ HOST: "127.0.0.1", PORT: port })).toEqual({
+    expect(
+      validateEnvironment(createEnvironmentFixture({ PORT: port })),
+    ).toEqual({
       success: true,
       data: { host: "127.0.0.1", port: Number(port) },
     });
@@ -20,7 +23,9 @@ describe("validateEnvironment", () => {
   it.each(["localhost", "0.0.0.0", "::1", ""])(
     "rejects unsafe host %j without returning its value",
     (host) => {
-      const result = validateEnvironment({ HOST: host });
+      const result = validateEnvironment(
+        createEnvironmentFixture({ HOST: host }),
+      );
 
       expect(result).toEqual({ success: false, invalidFields: ["HOST"] });
       expect(JSON.stringify(result)).not.toContain(host || '"HOST":""');
@@ -30,7 +35,9 @@ describe("validateEnvironment", () => {
   it.each(["0", "65536", "3000.5", "+3000", " 3000", "3000 ", ""])(
     "rejects malformed or out-of-range port %j",
     (port) => {
-      expect(validateEnvironment({ PORT: port })).toEqual({
+      expect(
+        validateEnvironment(createEnvironmentFixture({ PORT: port })),
+      ).toEqual({
         success: false,
         invalidFields: ["PORT"],
       });
@@ -38,10 +45,12 @@ describe("validateEnvironment", () => {
   );
 
   it("reports only field names when multiple values are invalid", () => {
-    const result = validateEnvironment({
-      HOST: "public.example",
-      PORT: "nope",
-    });
+    const result = validateEnvironment(
+      createEnvironmentFixture({
+        HOST: "public.example",
+        PORT: "nope",
+      }),
+    );
     const serializedResult = JSON.stringify(result);
 
     expect(result).toEqual({

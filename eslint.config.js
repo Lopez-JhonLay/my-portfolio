@@ -10,6 +10,7 @@ import tseslint from 'typescript-eslint'
 const typeScriptFiles = [
   'admin/**/*.{ts,tsx}',
   'server/{src,tests}/**/*.ts',
+  'server/vitest.config.ts',
 ]
 
 export default defineConfig([
@@ -106,7 +107,11 @@ export default defineConfig([
     },
   },
   {
-    files: ['admin/vite.config.ts', 'server/{src,tests}/**/*.ts'],
+    files: [
+      'admin/vite.config.ts',
+      'server/{src,tests}/**/*.ts',
+      'server/vitest.config.ts',
+    ],
     languageOptions: {
       globals: globals.node,
     },
