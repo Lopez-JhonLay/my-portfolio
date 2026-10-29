@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "node --env-file-if-exists=.env --watch src/server.ts",
+    "lint": "eslint src",
     "typecheck": "tsc --noEmit -p tsconfig.json",
+    "format:check": "prettier --check package.json tsconfig.json src",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js"
   },
