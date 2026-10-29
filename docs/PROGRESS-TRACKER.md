@@ -75,7 +75,7 @@ The repository and dependency foundation is complete locally. The admin and serv
 ### Milestone 1 — Technical specifications and decision gates
 
 - [x] `MVP-SPEC-001` **IMPLEMENTED LOCALLY** — Record the owner-selected project coding standards in repository guidance. **Depends:** `MVP-DOC-001`. **Acceptance:** [Requirements §§14.3 and 19](specs/portfolio-cms-requirements.md#143-maintainability-and-cost). **Evidence:** untracked `AGENTS.md`; no commit evidence.
-- [ ] `MVP-SPEC-002` **PROPOSED** — Specify module boundaries and the public presentation/content-transport contract. **Depends:** `MVP-SPEC-001`. **Acceptance:** [Requirements §§5 and 14.3](specs/portfolio-cms-requirements.md#5-existing-repository-and-compatibility-constraints).
+- [x] `MVP-SPEC-002` **IMPLEMENTED LOCALLY** — Specify module boundaries and the public presentation/content-transport contract. **Depends:** `MVP-SPEC-001` (completed locally). **Acceptance:** [Requirements §§5 and 14.3](specs/portfolio-cms-requirements.md#5-existing-repository-and-compatibility-constraints). **Evidence:** `specs/public-project-presentation-contract.md`; requirements traceability, Markdown whitespace, exact file scope, and `git diff --check` verified on 2026-10-29.
 - [ ] `MVP-SPEC-003` **PROPOSED** — Specify public/admin API resources, direct success bodies, standardized errors, Zod validation, and trust boundaries. **Depends:** `MVP-SPEC-002`. **Acceptance:** [Requirements §§5.1, 11, and 14.1](specs/portfolio-cms-requirements.md#51-project-compatibility-contract).
 - [ ] `MVP-SPEC-004` **PROPOSED** — Specify the Drizzle schema, migrations, constraints, transactions, optimistic concurrency, and idempotent operation records. **Depends:** `MVP-CONTRACT-001`. **Acceptance:** [Requirements §§8–10 and 17.1](specs/portfolio-cms-requirements.md#171-pre-implementation-gates).
 - [ ] `MVP-SPEC-005` **PROPOSED** — Specify GitHub OAuth, sessions, cookies/tokens, CSRF, CORS, callback allowlisting, expiry, and logout. **Depends:** `MVP-SPEC-003`. **Acceptance:** [Requirements §§6 and 17.1](specs/portfolio-cms-requirements.md#6-administrator-authentication-and-preview).
@@ -314,3 +314,9 @@ Files: `server/src/projects/project-contract.ts`, `server/src/projects/project-c
 Verification: 15 focused contract tests passed; `npm run quality:check` passed with 39 tests; server, Admin, and public builds passed; `git diff --check` passed.
 Delivery: implemented locally: Yes; committed: No; pushed: No; merged: Not established; deployed: No.
 Open: Linkless-project publication and presentation behavior remains unresolved under `MVP-SPEC-009`; no API, persistence, authentication, or UI behavior was implemented.
+
+2026-10-29 — `MVP-SPEC-002` authorized specification — Verified locally
+Files: `docs/specs/public-project-presentation-contract.md`, `docs/PROGRESS-TRACKER.md`
+Verification: requirements traceability, Markdown trailing-whitespace scan, exact two-file scope, and `git diff --check` passed.
+Delivery: implemented locally: Yes; committed: No; pushed: No; merged: Not established; deployed: No.
+Open: `MVP-SPEC-009–014` retain their recorded linkless-project, navigation, Markdown, preview, accessibility-matrix, and migration/cutover gates; no application behavior was implemented.
