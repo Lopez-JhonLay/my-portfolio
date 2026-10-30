@@ -110,7 +110,7 @@ The repository and dependency foundation is complete locally. The admin and serv
 
 ### Milestone 4 — PostgreSQL persistence
 
-- [ ] `MVP-DB-001` **BLOCKED** — Add separately approved Drizzle and PostgreSQL dependencies. **Depends:** approved `MVP-SPEC-004`; separate dependency authorization. **Acceptance:** [`CMS-REQ-008`, `012`](specs/portfolio-cms-requirements.md#2-original-requirements-and-lean-disposition).
+- [x] `MVP-DB-001` **IMPLEMENTED LOCALLY** — Add separately approved Drizzle and PostgreSQL dependencies. **Depends:** approved `MVP-SPEC-004`; dependency authorization completed. **Acceptance:** [`CMS-REQ-008`, `012`](specs/portfolio-cms-requirements.md#2-original-requirements-and-lean-disposition). **Evidence:** exact `drizzle-orm@0.45.4`, `pg@8.23.1`, `drizzle-kit@0.31.10`, and `@types/pg@8.23.1` dependencies; runtime imports, Drizzle Kit CLI version/help, production audit, repository quality checks, server build, and `git diff --check` passed on 2026-10-30.
 - [ ] `MVP-DB-002` **PROPOSED** — Implement the approved schema and initial migration. **Depends:** `MVP-DB-001`, `MVP-CONTRACT-001`. **Acceptance:** [Requirements §§8–10 and 14.3](specs/portfolio-cms-requirements.md#143-maintainability-and-cost).
 - [ ] `MVP-DB-003` **PROPOSED** — Enforce draft/published/Trash, ordering, featured-slot, slug, redirect, and uniqueness constraints. **Depends:** `MVP-DB-002`. **Acceptance:** [Requirements §§7–10](specs/portfolio-cms-requirements.md#7-project-descriptions-slugs-and-featured-selection).
 - [ ] `MVP-DB-004` **PROPOSED** — Implement feature repositories and explicit transaction propagation. **Depends:** `MVP-DB-002`, `MVP-FOUND-003`. **Acceptance:** [Requirements §§8–10](specs/portfolio-cms-requirements.md#8-save-draft-concurrency-and-uncertain-write-recovery).
@@ -344,3 +344,9 @@ Files: `docs/specs/database-persistence-contract.md`, `docs/PROGRESS-TRACKER.md`
 Verification: requirements traceability, Markdown trailing-whitespace scan, exact two-file scope, and `git diff --check` passed.
 Delivery: implemented locally: Yes; committed: No; pushed: No; merged: Not established; deployed: No.
 Open: Dependencies, schema implementation, migrations, and database access remain separately gated. `MVP-SPEC-007–009` retain unresolved lifecycle, redirect, and linkless-publication policies; `MVP-SPEC-014` retains migration, backup, restore, cutover, rollback, and Neon-feasibility decisions.
+
+2026-10-30 — `MVP-DB-001` authorized dependency installation — Verified locally
+Files: `server/package.json`, `package-lock.json`, `docs/PROGRESS-TRACKER.md`
+Verification: exact dependency versions and reviewed lockfile changes confirmed; server runtime imports and Drizzle Kit CLI version/help passed; `npm audit --omit=dev` reported zero vulnerabilities; `npm run quality:check` passed with 60 tests; server build and `git diff --check` passed.
+Delivery: implemented locally: Yes; committed: No; pushed: No; merged: Not established; deployed: No.
+Open: Development-only `GHSA-67mh-4wv8-2f99` remains provisionally accepted for local Drizzle tooling; no esbuild development server is exposed or required by this task. Schema, migrations, database access, and PostgreSQL connectivity remain separately gated.
