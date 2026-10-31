@@ -65,7 +65,7 @@ export const projects = pgTable(
     publicationIntent:
       projectPublicationIntentEnum("publication_intent").notNull(),
     draftRevision: bigint("draft_revision", { mode: "bigint" })
-      .default(1n)
+      .default(sql`1`)
       .notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -157,7 +157,9 @@ export const draftFeaturedState = pgTable(
         onDelete: "restrict",
         onUpdate: "restrict",
       }),
-    revision: bigint("revision", { mode: "bigint" }).default(1n).notNull(),
+    revision: bigint("revision", { mode: "bigint" })
+      .default(sql`1`)
+      .notNull(),
   },
   (table) => [
     check("draft_featured_state_singleton", sql`${table.singletonId} = 1`),
