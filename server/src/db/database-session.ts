@@ -19,6 +19,13 @@ export type SnapshotConsistentSessionBoundary<Session> = {
   ): Promise<Result>;
 };
 
+/** Runs a mutation callback once inside one injected database transaction. */
+export type TransactionSessionBoundary<Session> = {
+  withTransaction<Result>(
+    mutate: (session: Session) => Promise<Result>,
+  ): Promise<Result>;
+};
+
 /**
  * Adapts an injected Drizzle database without creating a pool or connection.
  * Each read callback receives one read-only repeatable-read transaction.
@@ -32,5 +39,14 @@ export function createDrizzleSnapshotSessionBoundary(
         accessMode: "read only",
         isolationLevel: "repeatable read",
       }),
+  };
+}
+
+/** Adapts an injected Drizzle database without opening a connection. */
+export function createDrizzleTransactionSessionBoundary(
+  database: ProjectDatabase,
+): TransactionSessionBoundary<ProjectDatabaseTransaction> {
+  return {
+    withTransaction: (mutate) => database.transaction(mutate),
   };
 }

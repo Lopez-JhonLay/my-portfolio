@@ -39,6 +39,9 @@ export type PostgresqlTestHarness = {
   readonly client: Client;
   readonly database: ProjectDatabase;
   readonly schemaName: string;
+  withAdditionalDatabase<Result>(
+    use: (database: ProjectDatabase) => Promise<Result>,
+  ): Promise<Result>;
   cleanup(): Promise<void>;
 };
 
@@ -286,6 +289,39 @@ export async function openPostgresqlTestHarness(options: {
     client,
     database,
     schemaName,
+    withAdditionalDatabase: async (use) => {
+      assertTemporarySchemaName(schemaName);
+      const additionalClient = new Client({
+        application_name: "portfolio-cms-integration-test-additional-session",
+        connectionString: target.connectionString,
+      });
+      await additionalClient.connect();
+
+      try {
+        await additionalClient.query(`SET search_path TO ${quotedSchemaName}`);
+        const identity = await readDatabaseIdentity(additionalClient);
+        const ownership = await readSchemaOwnership(
+          additionalClient,
+          schemaName,
+        );
+
+        if (
+          identity.databaseName !== target.databaseName ||
+          identity.schemaName !== schemaName ||
+          identity.ownerName !== ownerName ||
+          ownership?.schemaName !== schemaName ||
+          ownership.ownerName !== ownerName
+        ) {
+          throw new Error(
+            "PostgreSQL additional test session refused an unexpected database, schema, or owner",
+          );
+        }
+
+        return await use(drizzle(additionalClient, { schema: projectSchema }));
+      } finally {
+        await additionalClient.end();
+      }
+    },
     cleanup: async () => {
       assertTemporarySchemaName(schemaName);
 
