@@ -15,7 +15,7 @@ import {
 import {
   PROJECT_CATEGORY_ORDER,
   type ProjectId,
-} from "../../projects/project-contract.js";
+} from "../../projects/project-contract.ts";
 
 export const projectCategoryEnum = pgEnum(
   "project_category",

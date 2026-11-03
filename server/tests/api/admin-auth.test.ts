@@ -2,10 +2,14 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
-import { createAdminAuth } from "../../src/auth/admin-auth.ts";
+import {
+  createAdminAuth,
+  createGitHubOAuthClient,
+} from "../../src/auth/admin-auth.ts";
 import { createApp } from "../../src/app.ts";
 
 const ADMIN_ORIGIN = "http://127.0.0.1:5174";
+const GITHUB_OAUTH_ISSUER = "https://github.com/login/oauth";
 const authenticatedSessionSchema = z.strictObject({
   authenticated: z.literal(true),
   csrfToken: z.string().min(1),
@@ -72,6 +76,45 @@ function createTestAuth(userId = "12345678") {
   };
 }
 
+describe("GitHub OAuth client", () => {
+  it("accepts documented fields in GitHub token and user responses", async () => {
+    const responses = [
+      new Response(
+        JSON.stringify({
+          access_token: "synthetic-access-token",
+          scope: "",
+          token_type: "bearer",
+        }),
+        { status: 200 },
+      ),
+      new Response(
+        JSON.stringify({
+          id: 12_345_678,
+          login: "synthetic-admin",
+          node_id: "synthetic-node-id",
+        }),
+        { status: 200 },
+      ),
+    ];
+    const fetchImplementation: typeof fetch = () => {
+      const response = responses.shift();
+      if (response === undefined) {
+        throw new Error("Unexpected GitHub request");
+      }
+      return Promise.resolve(response);
+    };
+    const client = createGitHubOAuthClient({
+      clientId: "test-github-client-id",
+      clientSecret: "test-github-client-secret",
+      fetchImplementation,
+    });
+
+    await expect(client.exchangeCode("synthetic-code")).resolves.toEqual({
+      userId: "12345678",
+    });
+  });
+});
+
 describe("admin authentication API", () => {
   it("completes GitHub OAuth for the allowlisted numeric identity", async () => {
     const { app } = createTestAuth();
@@ -118,6 +161,96 @@ describe("admin authentication API", () => {
     ).toMatchObject({
       authenticated: true,
     });
+  });
+
+  it("round-trips OAuth state through a browser cookie jar exactly once", async () => {
+    const { app } = createTestAuth();
+    const browser = request.agent(app);
+    const start = await browser.get("/api/auth/github");
+    const authorizationUrl = new URL(requiredHeader(start, "location"));
+    const state = authorizationUrl.searchParams.get("state");
+
+    expect(serializedSetCookie(start)).toMatch(
+      /Path=\/api\/auth\/github; HttpOnly; SameSite=Lax; Max-Age=600/,
+    );
+
+    const callback = await browser
+      .get("/api/auth/github/callback")
+      .query({ code: "github-code", state });
+    const replay = await browser
+      .get("/api/auth/github/callback")
+      .query({ code: "github-code", state });
+
+    expect(callback.status).toBe(302);
+    expect(requiredHeader(callback, "location")).toBe(ADMIN_ORIGIN);
+    expect(replay.status).toBe(400);
+    expect(responseBody(replay)).toMatchObject({
+      error: { code: "INVALID_OAUTH_STATE" },
+    });
+  });
+
+  it("accepts only the expected optional GitHub OAuth issuer", async () => {
+    const expectedIssuerBrowser = request.agent(createTestAuth().app);
+    const expectedIssuerStart =
+      await expectedIssuerBrowser.get("/api/auth/github");
+    const expectedIssuerAuthorizationUrl = new URL(
+      requiredHeader(expectedIssuerStart, "location"),
+    );
+    const expectedIssuerCallback = await expectedIssuerBrowser
+      .get("/api/auth/github/callback")
+      .query({
+        code: "github-code",
+        iss: GITHUB_OAUTH_ISSUER,
+        state: expectedIssuerAuthorizationUrl.searchParams.get("state"),
+      });
+
+    const mismatchedIssuerBrowser = request.agent(createTestAuth().app);
+    const mismatchedIssuerStart =
+      await mismatchedIssuerBrowser.get("/api/auth/github");
+    const mismatchedIssuerAuthorizationUrl = new URL(
+      requiredHeader(mismatchedIssuerStart, "location"),
+    );
+    const mismatchedIssuerState =
+      mismatchedIssuerAuthorizationUrl.searchParams.get("state");
+    const mismatchedIssuerCallback = await mismatchedIssuerBrowser
+      .get("/api/auth/github/callback")
+      .query({
+        code: "github-code",
+        iss: "https://example.invalid/login/oauth",
+        state: mismatchedIssuerState,
+      });
+    const callbackWithoutIssuer = await mismatchedIssuerBrowser
+      .get("/api/auth/github/callback")
+      .query({ code: "github-code", state: mismatchedIssuerState });
+
+    expect(expectedIssuerCallback.status).toBe(302);
+    expect(mismatchedIssuerCallback.status).toBe(400);
+    expect(responseBody(mismatchedIssuerCallback)).toMatchObject({
+      error: { code: "INVALID_OAUTH_STATE" },
+    });
+    expect(callbackWithoutIssuer.status).toBe(302);
+  });
+
+  it("does not consume valid OAuth state when a mismatched callback arrives", async () => {
+    const { app } = createTestAuth();
+    const browser = request.agent(app);
+    const start = await browser.get("/api/auth/github");
+    const authorizationUrl = new URL(requiredHeader(start, "location"));
+    const state = authorizationUrl.searchParams.get("state");
+
+    const mismatched = await browser.get("/api/auth/github/callback").query({
+      code: "github-code",
+      state: "synthetic-mismatched-state-value-123456",
+    });
+    const valid = await browser
+      .get("/api/auth/github/callback")
+      .query({ code: "github-code", state });
+
+    expect(mismatched.status).toBe(400);
+    expect(responseBody(mismatched)).toMatchObject({
+      error: { code: "INVALID_OAUTH_STATE" },
+    });
+    expect(valid.status).toBe(302);
   });
 
   it("refuses a GitHub identity outside the numeric allowlist", async () => {

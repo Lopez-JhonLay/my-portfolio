@@ -9,10 +9,12 @@ import { ApplicationError } from "../middleware/application-error.ts";
 const SESSION_COOKIE = "portfolio_cms_session";
 const OAUTH_STATE_COOKIE = "portfolio_cms_oauth_state";
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1_000;
-const githubTokenSchema = z.strictObject({ access_token: z.string().min(1) });
-const githubUserSchema = z.strictObject({ id: z.number().int().positive() });
+const GITHUB_OAUTH_ISSUER = "https://github.com/login/oauth";
+const githubTokenSchema = z.object({ access_token: z.string().min(1) });
+const githubUserSchema = z.object({ id: z.number().int().positive() });
 const oauthCallbackSchema = z.strictObject({
   code: z.string().min(1).max(512),
+  iss: z.literal(GITHUB_OAUTH_ISSUER).optional(),
   state: z.string().min(32).max(256),
 });
 
