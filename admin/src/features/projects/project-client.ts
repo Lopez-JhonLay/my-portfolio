@@ -1,12 +1,15 @@
-import { adminRequest } from "../../lib/admin-http";
+import { adminRequest } from "../../lib/admin-http.ts";
 import {
   PROJECT_CATEGORIES,
   type AdminProject,
   type DraftOperation,
+  type FeaturedDraft,
+  type PublicationOperation,
   type ProjectDraft,
   type ProjectList,
   type SaveResult,
-} from "./project-contract";
+  type SaveFeaturedResult,
+} from "./project-contract.ts";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -139,6 +142,61 @@ function parseOperation(value: unknown): DraftOperation {
   throw new Error("Invalid operation response");
 }
 
+export function parsePublicationOperation(
+  value: unknown,
+): PublicationOperation {
+  if (
+    !isRecord(value) ||
+    !isUuid(value.operationId) ||
+    value.kind !== "publish"
+  ) {
+    throw new Error("Invalid publication operation response");
+  }
+  if (
+    value.status === "pending" &&
+    hasOnlyKeys(value, ["operationId", "kind", "status"])
+  ) {
+    return {
+      operationId: value.operationId,
+      kind: "publish",
+      status: "pending",
+    };
+  }
+  if (
+    value.status === "succeeded" &&
+    value.outcomeCode === "published" &&
+    isPositiveIntegerString(value.snapshotRevision) &&
+    hasOnlyKeys(value, [
+      "operationId",
+      "kind",
+      "status",
+      "outcomeCode",
+      "snapshotRevision",
+    ])
+  ) {
+    return {
+      operationId: value.operationId,
+      kind: "publish",
+      status: "succeeded",
+      outcomeCode: "published",
+      snapshotRevision: value.snapshotRevision,
+    };
+  }
+  if (
+    value.status === "failed" &&
+    value.outcomeCode === "publish_not_ready" &&
+    hasOnlyKeys(value, ["operationId", "kind", "status", "outcomeCode"])
+  ) {
+    return {
+      operationId: value.operationId,
+      kind: "publish",
+      status: "failed",
+      outcomeCode: "publish_not_ready",
+    };
+  }
+  throw new Error("Invalid publication operation response");
+}
+
 function parseSaveResult(value: unknown): SaveResult {
   try {
     return parseAdminProject(value);
@@ -177,10 +235,50 @@ function parseProjectList(value: unknown): ProjectList {
   };
 }
 
+export function parseFeaturedDraft(value: unknown): FeaturedDraft {
+  if (
+    !isRecord(value) ||
+    !hasOnlyKeys(value, ["revision", "slots"]) ||
+    !isPositiveIntegerString(value.revision) ||
+    !Array.isArray(value.slots) ||
+    value.slots.length !== 3 ||
+    !value.slots.every((projectId) => projectId === null || isUuid(projectId))
+  ) {
+    throw new Error("Invalid featured draft response");
+  }
+  return {
+    revision: value.revision,
+    slots: [
+      value.slots[0] ?? null,
+      value.slots[1] ?? null,
+      value.slots[2] ?? null,
+    ],
+  };
+}
+
+function parseSaveFeaturedResult(value: unknown): SaveFeaturedResult {
+  try {
+    return parseFeaturedDraft(value);
+  } catch {
+    return parseOperation(value);
+  }
+}
+
 export function parseAuthoritativeProject(value: unknown): AdminProject | null {
   if (!isRecord(value) || !isRecord(value.authoritative)) return null;
   try {
     return parseAdminProject(value.authoritative);
+  } catch {
+    return null;
+  }
+}
+
+export function parseAuthoritativeFeatured(
+  value: unknown,
+): FeaturedDraft | null {
+  if (!isRecord(value) || !("authoritative" in value)) return null;
+  try {
+    return parseFeaturedDraft(value.authoritative);
   } catch {
     return null;
   }
@@ -201,6 +299,12 @@ export function createProjectClient(apiOrigin: string) {
     read: async (projectId: string, signal?: AbortSignal) =>
       parseAdminProject(
         await adminRequest(apiOrigin, `/api/admin/projects/${projectId}`, {
+          signal,
+        }),
+      ),
+    readFeatured: async (signal?: AbortSignal) =>
+      parseFeaturedDraft(
+        await adminRequest(apiOrigin, "/api/admin/project-featured", {
           signal,
         }),
       ),
@@ -240,11 +344,49 @@ export function createProjectClient(apiOrigin: string) {
           },
         ),
       ),
+    saveFeatured: async (
+      operationId: string,
+      csrfToken: string,
+      expectedRevision: string,
+      slots: FeaturedDraft["slots"],
+      signal?: AbortSignal,
+    ) =>
+      parseSaveFeaturedResult(
+        await adminRequest(apiOrigin, "/api/admin/project-featured", {
+          body: { expectedRevision, slots },
+          csrfToken,
+          method: "PUT",
+          operationId,
+          signal,
+        }),
+      ),
     readOperation: async (operationId: string, signal?: AbortSignal) =>
       parseOperation(
         await adminRequest(
           apiOrigin,
           `/api/admin/project-operations/${operationId}`,
+          { signal },
+        ),
+      ),
+    publish: async (
+      operationId: string,
+      csrfToken: string,
+      signal?: AbortSignal,
+    ) =>
+      parsePublicationOperation(
+        await adminRequest(apiOrigin, "/api/admin/project-publications", {
+          body: {},
+          csrfToken,
+          method: "POST",
+          operationId,
+          signal,
+        }),
+      ),
+    readPublication: async (operationId: string, signal?: AbortSignal) =>
+      parsePublicationOperation(
+        await adminRequest(
+          apiOrigin,
+          `/api/admin/project-publications/${operationId}`,
           { signal },
         ),
       ),

@@ -61,6 +61,33 @@ export type DraftOperation =
 
 export type SaveResult = AdminProject | DraftOperation;
 
+export type PublicationOperation =
+  | {
+      readonly operationId: string;
+      readonly kind: "publish";
+      readonly status: "pending";
+    }
+  | {
+      readonly operationId: string;
+      readonly kind: "publish";
+      readonly status: "succeeded";
+      readonly outcomeCode: "published";
+      readonly snapshotRevision: string;
+    }
+  | {
+      readonly operationId: string;
+      readonly kind: "publish";
+      readonly status: "failed";
+      readonly outcomeCode: "publish_not_ready";
+    };
+
+export type FeaturedDraft = {
+  readonly revision: string;
+  readonly slots: readonly [string | null, string | null, string | null];
+};
+
+export type SaveFeaturedResult = FeaturedDraft | DraftOperation;
+
 export type ProjectFormValue = {
   readonly number: string;
   readonly name: string;

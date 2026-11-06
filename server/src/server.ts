@@ -12,6 +12,7 @@ import { createDatabaseRuntime } from "./db/database.ts";
 import { createAdminProjectRouter } from "./projects/admin-project-router.ts";
 import { createDrizzleProjectDraftReadRepository } from "./projects/project-draft-read-repository.ts";
 import { createDrizzleProjectMutationService } from "./projects/project-mutation-repository.ts";
+import { createDrizzleProjectPublicationService } from "./projects/project-publication-repository.ts";
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
@@ -57,6 +58,9 @@ function startServer(environment: ServerEnvironment): void {
     authRouter: auth.router,
     adminProjectRouter: createAdminProjectRouter({
       mutationService: createDrizzleProjectMutationService(
+        createDrizzleTransactionSessionBoundary(databaseRuntime.database),
+      ),
+      publicationService: createDrizzleProjectPublicationService(
         createDrizzleTransactionSessionBoundary(databaseRuntime.database),
       ),
       readRepository: createDrizzleProjectDraftReadRepository(

@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { EMPTY_PROJECT_FORM, validateProjectForm } from "./project-contract.ts";
+import {
+  parseFeaturedDraft,
+  parsePublicationOperation,
+} from "./project-client.ts";
 
 void describe("Project form contract", () => {
   void it("returns field errors instead of an invalid draft", () => {
@@ -61,5 +65,74 @@ void describe("Project form contract", () => {
       liveUrl: "Use a complete HTTP or HTTPS URL.",
       longDescriptionMarkdown: "Markdown cannot contain only spaces.",
     });
+  });
+});
+
+void describe("Publication response contract", () => {
+  void it("accepts pending and successful publication outcomes", () => {
+    assert.deepEqual(
+      parsePublicationOperation({
+        operationId: "11111111-1111-4111-8111-111111111111",
+        kind: "publish",
+        status: "pending",
+      }),
+      {
+        operationId: "11111111-1111-4111-8111-111111111111",
+        kind: "publish",
+        status: "pending",
+      },
+    );
+    assert.deepEqual(
+      parsePublicationOperation({
+        operationId: "11111111-1111-4111-8111-111111111111",
+        kind: "publish",
+        status: "succeeded",
+        outcomeCode: "published",
+        snapshotRevision: "2",
+      }),
+      {
+        operationId: "11111111-1111-4111-8111-111111111111",
+        kind: "publish",
+        status: "succeeded",
+        outcomeCode: "published",
+        snapshotRevision: "2",
+      },
+    );
+  });
+
+  void it("rejects unknown publication fields and invalid revisions", () => {
+    assert.throws(() =>
+      parsePublicationOperation({
+        operationId: "11111111-1111-4111-8111-111111111111",
+        kind: "publish",
+        status: "succeeded",
+        outcomeCode: "published",
+        snapshotRevision: "0",
+        draft: true,
+      }),
+    );
+  });
+});
+
+void describe("Featured draft response contract", () => {
+  void it("preserves the three selected slots in order", () => {
+    assert.deepEqual(
+      parseFeaturedDraft({
+        revision: "4",
+        slots: [
+          "11111111-1111-4111-8111-111111111111",
+          null,
+          "22222222-2222-4222-8222-222222222222",
+        ],
+      }),
+      {
+        revision: "4",
+        slots: [
+          "11111111-1111-4111-8111-111111111111",
+          null,
+          "22222222-2222-4222-8222-222222222222",
+        ],
+      },
+    );
   });
 });

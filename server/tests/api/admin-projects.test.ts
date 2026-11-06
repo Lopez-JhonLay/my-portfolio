@@ -16,6 +16,11 @@ import type {
   MutationOperationReadResult,
   ProjectMutationService,
 } from "../../src/projects/project-mutation-service.ts";
+import type {
+  PublicationCommandResult,
+  PublicationOperationReadResult,
+  ProjectPublicationService,
+} from "../../src/projects/project-publication-service.ts";
 
 const ADMIN_ORIGIN = "http://127.0.0.1:5174";
 const PROJECT_ID = projectIdSchema.parse(
@@ -38,7 +43,10 @@ function createDraft(overrides: Partial<ProjectVersion> = {}): ProjectVersion {
 function createApi(
   options: {
     commandResult?: MutationCommandResult;
+    featuredCommandResult?: MutationCommandResult;
     operationResult?: MutationOperationReadResult;
+    publicationResult?: PublicationCommandResult;
+    publicationStatus?: PublicationOperationReadResult;
   } = {},
 ) {
   const project = {
@@ -52,6 +60,8 @@ function createApi(
     list: () => Promise.resolve({ projects: [project], totalItems: 1 }),
     read: (projectId) =>
       Promise.resolve(projectId === PROJECT_ID ? project : null),
+    readFeatured: () =>
+      Promise.resolve({ revision: 1n, slots: [PROJECT_ID, null, null] }),
   };
   const defaultCommandResult: MutationCommandResult = {
     operationId: "22222222-2222-4222-8222-222222222222",
@@ -67,7 +77,16 @@ function createApi(
     saveProjectDraft: () =>
       Promise.resolve(options.commandResult ?? defaultCommandResult),
     saveDraftFeatured: () =>
-      Promise.reject(new Error("Featured saves are outside this API")),
+      Promise.resolve(
+        options.featuredCommandResult ?? {
+          operationId: "66666666-6666-4666-8666-666666666666",
+          kind: "save_featured_draft",
+          projectId: null,
+          status: "succeeded",
+          outcomeCode: "featured_draft_saved",
+          resultRevision: 2n,
+        },
+      ),
     readMutationOperation: () =>
       Promise.resolve(
         options.operationResult ?? {
@@ -77,6 +96,19 @@ function createApi(
           status: "pending",
         },
       ),
+  };
+  const defaultPublicationResult: PublicationCommandResult = {
+    operationId: "44444444-4444-4444-8444-444444444444",
+    kind: "publish",
+    status: "succeeded",
+    outcomeCode: "published",
+    snapshotRevision: 1n,
+  };
+  const publicationService: ProjectPublicationService = {
+    publishUpdates: () =>
+      Promise.resolve(options.publicationResult ?? defaultPublicationResult),
+    readPublicationOperation: () =>
+      Promise.resolve(options.publicationStatus ?? defaultPublicationResult),
   };
   const auth = createAdminAuth({
     config: {
@@ -95,6 +127,7 @@ function createApi(
     adminOrigin: ADMIN_ORIGIN,
     adminProjectRouter: createAdminProjectRouter({
       mutationService,
+      publicationService,
       readRepository,
       requireAdmin: auth.requireAdmin,
       requireCsrf: auth.requireCsrf,
@@ -135,6 +168,26 @@ describe("authenticated Project draft API", () => {
     });
     await expect(
       request(app).post("/api/admin/projects"),
+    ).resolves.toMatchObject({
+      status: 401,
+      body: { error: { code: "UNAUTHORIZED" } },
+    });
+    await expect(
+      request(app).post("/api/admin/project-publications"),
+    ).resolves.toMatchObject({
+      status: 401,
+      body: { error: { code: "UNAUTHORIZED" } },
+    });
+    await expect(
+      request(app).get("/api/admin/project-featured"),
+    ).resolves.toMatchObject({
+      status: 401,
+      body: { error: { code: "UNAUTHORIZED" } },
+    });
+    await expect(
+      request(app).get(
+        "/api/admin/project-publications/44444444-4444-4444-8444-444444444444",
+      ),
     ).resolves.toMatchObject({
       status: 401,
       body: { error: { code: "UNAUTHORIZED" } },
@@ -292,5 +345,101 @@ describe("authenticated Project draft API", () => {
     expect(responseBody(missingResponse)).toMatchObject({
       error: { code: "NOT_FOUND" },
     });
+  });
+
+  it("publishes only with authentication, CSRF, and a client operation ID", async () => {
+    const { app, cookie, csrfToken } = createApi();
+    const missingCsrf = await authenticated(
+      request(app)
+        .post("/api/admin/project-publications")
+        .set("Idempotency-Key", "44444444-4444-4444-8444-444444444444")
+        .send({}),
+      cookie,
+    );
+    const published = await authenticated(
+      request(app)
+        .post("/api/admin/project-publications")
+        .set("X-CSRF-Token", csrfToken)
+        .set("Idempotency-Key", "44444444-4444-4444-8444-444444444444")
+        .send({}),
+      cookie,
+    );
+
+    expect(missingCsrf.status).toBe(403);
+    expect(published.status).toBe(200);
+    expect(responseBody(published)).toEqual({
+      operationId: "44444444-4444-4444-8444-444444444444",
+      kind: "publish",
+      status: "succeeded",
+      outcomeCode: "published",
+      snapshotRevision: "1",
+    });
+  });
+
+  it("reads and saves ordered draft featured slots with CSRF protection", async () => {
+    const { app, cookie, csrfToken } = createApi();
+    const readResponse = await authenticated(
+      request(app).get("/api/admin/project-featured"),
+      cookie,
+    );
+    const saveResponse = await authenticated(
+      request(app)
+        .put("/api/admin/project-featured")
+        .set("X-CSRF-Token", csrfToken)
+        .set("Idempotency-Key", "66666666-6666-4666-8666-666666666666")
+        .send({
+          expectedRevision: "1",
+          slots: [PROJECT_ID, null, null],
+        }),
+      cookie,
+    );
+
+    expect(readResponse.status).toBe(200);
+    expect(responseBody(readResponse)).toEqual({
+      revision: "1",
+      slots: [PROJECT_ID, null, null],
+    });
+    expect(saveResponse.status).toBe(200);
+    expect(responseBody(saveResponse)).toEqual({
+      revision: "1",
+      slots: [PROJECT_ID, null, null],
+    });
+  });
+
+  it("returns actionable invalid-candidate and read-only publication outcomes", async () => {
+    const failedOperation: PublicationCommandResult = {
+      operationId: "44444444-4444-4444-8444-444444444444",
+      kind: "publish",
+      status: "failed",
+      outcomeCode: "publish_not_ready",
+    };
+    const failed = createApi({ publicationResult: failedOperation });
+    const failedResponse = await authenticated(
+      request(failed.app)
+        .post("/api/admin/project-publications")
+        .set("X-CSRF-Token", failed.csrfToken)
+        .set("Idempotency-Key", "44444444-4444-4444-8444-444444444444")
+        .send({}),
+      failed.cookie,
+    );
+    const pendingOperation: PublicationOperationReadResult = {
+      operationId: "55555555-5555-4555-8555-555555555555",
+      kind: "publish",
+      status: "pending",
+    };
+    const pending = createApi({ publicationStatus: pendingOperation });
+    const statusResponse = await authenticated(
+      request(pending.app).get(
+        "/api/admin/project-publications/55555555-5555-4555-8555-555555555555",
+      ),
+      pending.cookie,
+    );
+
+    expect(failedResponse.status).toBe(422);
+    expect(responseBody(failedResponse)).toMatchObject({
+      error: { code: "PUBLISH_NOT_READY" },
+    });
+    expect(statusResponse.status).toBe(200);
+    expect(responseBody(statusResponse)).toEqual(pendingOperation);
   });
 });

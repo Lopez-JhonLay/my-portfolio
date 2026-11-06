@@ -5,6 +5,7 @@ import { z } from "zod";
 import { ApplicationError } from "../middleware/application-error.ts";
 import {
   projectIdSchema,
+  draftFeaturedSlotsSchema,
   projectLifecycleSchema,
   projectPublicationIntentSchema,
   projectVersionSchema,
@@ -19,6 +20,12 @@ import type {
   MutationOperationView,
   ProjectMutationService,
 } from "./project-mutation-service.ts";
+import type {
+  PublicationCommandResult,
+  PublicationOperationReadResult,
+  PublicationOperationView,
+  ProjectPublicationService,
+} from "./project-publication-service.ts";
 
 export type { AdminProjectDraftReadRepository } from "./project-draft-read-repository.ts";
 
@@ -33,12 +40,20 @@ const paginationSchema = z.strictObject({
   pageSize: z.coerce.number().int().positive().max(100).default(20),
 });
 const createBodySchema = z.strictObject({ draft: projectVersionSchema });
+const publishBodySchema = z.strictObject({});
 const saveBodySchema = z.strictObject({
   expectedRevision: z
     .string()
     .regex(/^[1-9][0-9]*$/)
     .transform((value) => BigInt(value)),
   draft: projectVersionSchema,
+});
+const featuredSaveBodySchema = z.strictObject({
+  expectedRevision: z
+    .string()
+    .regex(/^[1-9][0-9]*$/)
+    .transform((value) => BigInt(value)),
+  slots: draftFeaturedSlotsSchema,
 });
 const projectResponseSchema = z.strictObject({
   id: apiProjectIdSchema,
@@ -74,6 +89,34 @@ const operationResponseSchema = z.union([
     resultRevision: z.string().regex(/^[1-9][0-9]*$/),
   }),
 ]);
+const publicationResponseSchema = z.union([
+  z.strictObject({
+    operationId: operationIdSchema,
+    kind: z.literal("publish"),
+    status: z.literal("pending"),
+  }),
+  z.strictObject({
+    operationId: operationIdSchema,
+    kind: z.literal("publish"),
+    status: z.literal("succeeded"),
+    outcomeCode: z.literal("published"),
+    snapshotRevision: z.string().regex(/^[1-9][0-9]*$/),
+  }),
+  z.strictObject({
+    operationId: operationIdSchema,
+    kind: z.literal("publish"),
+    status: z.literal("failed"),
+    outcomeCode: z.literal("publish_not_ready"),
+  }),
+]);
+const featuredResponseSchema = z.strictObject({
+  revision: z.string().regex(/^[1-9][0-9]*$/),
+  slots: z.tuple([
+    apiProjectIdSchema.nullable(),
+    apiProjectIdSchema.nullable(),
+    apiProjectIdSchema.nullable(),
+  ]),
+});
 
 function validationError(error: z.ZodError): ApplicationError {
   return new ApplicationError({
@@ -109,11 +152,32 @@ function projectDto(project: AdminProjectDraft) {
   });
 }
 
+function featuredDto(featured: {
+  readonly revision: bigint;
+  readonly slots: readonly [unknown, unknown, unknown];
+}) {
+  return featuredResponseSchema.parse({
+    revision: featured.revision.toString(),
+    slots: featured.slots,
+  });
+}
+
 function operationDto(operation: MutationOperationView) {
   return operationResponseSchema.parse(
     operation.status === "pending"
       ? operation
       : { ...operation, resultRevision: operation.resultRevision.toString() },
+  );
+}
+
+function publicationDto(operation: PublicationOperationView) {
+  return publicationResponseSchema.parse(
+    operation.status === "succeeded"
+      ? {
+          ...operation,
+          snapshotRevision: operation.snapshotRevision.toString(),
+        }
+      : operation,
   );
 }
 
@@ -172,9 +236,64 @@ function readOperationResponse(result: MutationOperationReadResult) {
   return operationDto(result);
 }
 
+function publicationResponse(result: PublicationCommandResult) {
+  if (result.status === "operation-conflict") throw operationConflict();
+  if (result.status === "failed") {
+    throw new ApplicationError({
+      code: "PUBLISH_NOT_READY",
+      message:
+        "Publish Updates requires valid drafts and exactly three distinct featured Projects.",
+      status: 422,
+    });
+  }
+  return {
+    body: publicationDto(result),
+    status: result.status === "pending" ? 202 : 200,
+  };
+}
+
+function readPublicationResponse(result: PublicationOperationReadResult) {
+  if (result.status === "not-found") throw notFound();
+  if (result.status === "operation-conflict") throw operationConflict();
+  return publicationDto(result);
+}
+
+async function featuredMutationResponse(
+  result: MutationCommandResult,
+  readRepository: AdminProjectDraftReadRepository,
+) {
+  if (result.status === "operation-conflict") throw operationConflict();
+  if (result.status === "project-not-found") throw notFound();
+  if (result.status === "pending") {
+    return { body: operationDto(result), status: 202 };
+  }
+  if (result.status === "failed") {
+    if (result.outcomeCode === "stale_revision") {
+      throw new ApplicationError({
+        code: "STALE_REVISION",
+        message: "The featured selection changed in another request.",
+        status: 409,
+        details: {
+          authoritative: featuredDto(await readRepository.readFeatured()),
+        },
+      });
+    }
+    throw new ApplicationError({
+      code: "VALIDATION_ERROR",
+      message: "The featured selection references an unknown Project.",
+      status: 422,
+    });
+  }
+  return {
+    body: featuredDto(await readRepository.readFeatured()),
+    status: 200,
+  };
+}
+
 /** Protected local-development API for Project draft administration. */
 export function createAdminProjectRouter(options: {
   readonly mutationService: ProjectMutationService;
+  readonly publicationService: ProjectPublicationService;
   readonly readRepository: AdminProjectDraftReadRepository;
   readonly requireAdmin: RequestHandler;
   readonly requireCsrf: RequestHandler;
@@ -205,6 +324,28 @@ export function createAdminProjectRouter(options: {
     if (project === null) throw notFound();
     response.json(projectDto(project));
   });
+
+  router.get("/project-featured", async (_request, response) => {
+    response.json(featuredDto(await options.readRepository.readFeatured()));
+  });
+
+  router.put(
+    "/project-featured",
+    options.requireCsrf,
+    async (request, response) => {
+      const body = parse(featuredSaveBodySchema, request.body);
+      const result = await options.mutationService.saveDraftFeatured({
+        operationId: operationId(request.headers),
+        expectedRevision: body.expectedRevision,
+        slots: body.slots,
+      });
+      const output = await featuredMutationResponse(
+        result,
+        options.readRepository,
+      );
+      response.status(output.status).json(output.body);
+    },
+  );
 
   router.post("/projects", options.requireCsrf, async (request, response) => {
     const body = parse(createBodySchema, request.body);
@@ -243,6 +384,34 @@ export function createAdminProjectRouter(options: {
       await options.mutationService.readMutationOperation(operationId);
     response.json(readOperationResponse(result));
   });
+
+  router.post(
+    "/project-publications",
+    options.requireCsrf,
+    async (request, response) => {
+      parse(publishBodySchema, request.body);
+      const result = await options.publicationService.publishUpdates({
+        operationId: operationId(request.headers),
+      });
+      const output = publicationResponse(result);
+      response.status(output.status).json(output.body);
+    },
+  );
+
+  router.get(
+    "/project-publications/:operationId",
+    async (request, response) => {
+      const { operationId: parsedOperationId } = parse(
+        operationPathSchema,
+        request.params,
+      );
+      const result =
+        await options.publicationService.readPublicationOperation(
+          parsedOperationId,
+        );
+      response.json(readPublicationResponse(result));
+    },
+  );
 
   return router;
 }

@@ -6,6 +6,7 @@ export type ApplicationErrorCode =
   | "NOT_FOUND"
   | "OPERATION_CONFLICT"
   | "ORIGIN_NOT_ALLOWED"
+  | "PUBLISH_NOT_READY"
   | "STALE_REVISION"
   | "UNAUTHORIZED"
   | "VALIDATION_ERROR";

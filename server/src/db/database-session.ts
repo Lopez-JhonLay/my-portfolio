@@ -23,6 +23,7 @@ export type SnapshotConsistentSessionBoundary<Session> = {
 export type TransactionSessionBoundary<Session> = {
   withTransaction<Result>(
     mutate: (session: Session) => Promise<Result>,
+    options?: { readonly isolationLevel: "serializable" },
   ): Promise<Result>;
 };
 
@@ -47,6 +48,11 @@ export function createDrizzleTransactionSessionBoundary(
   database: ProjectDatabase,
 ): TransactionSessionBoundary<ProjectDatabaseTransaction> {
   return {
-    withTransaction: (mutate) => database.transaction(mutate),
+    withTransaction: (mutate, options) =>
+      options === undefined
+        ? database.transaction(mutate)
+        : database.transaction(mutate, {
+            isolationLevel: options.isolationLevel,
+          }),
   };
 }

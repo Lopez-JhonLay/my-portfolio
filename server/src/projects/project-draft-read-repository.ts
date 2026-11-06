@@ -4,7 +4,11 @@ import type {
   ProjectDatabaseTransaction,
   SnapshotConsistentSessionBoundary,
 } from "../db/database-session.ts";
-import { projectDrafts, projects } from "../db/schema/project-schema.ts";
+import {
+  draftFeaturedState,
+  projectDrafts,
+  projects,
+} from "../db/schema/project-schema.ts";
 import type { ProjectId, ProjectVersion } from "./project-contract.ts";
 
 export type AdminProjectDraft = {
@@ -15,12 +19,22 @@ export type AdminProjectDraft = {
   readonly draft: ProjectVersion;
 };
 
+export type AdminFeaturedDraft = {
+  readonly revision: bigint;
+  readonly slots: readonly [
+    ProjectId | null,
+    ProjectId | null,
+    ProjectId | null,
+  ];
+};
+
 export type AdminProjectDraftReadRepository = {
   list(input: { readonly limit: number; readonly offset: number }): Promise<{
     readonly projects: readonly AdminProjectDraft[];
     readonly totalItems: number;
   }>;
   read(projectId: ProjectId): Promise<AdminProjectDraft | null>;
+  readFeatured(): Promise<AdminFeaturedDraft>;
 };
 
 const selection = {
@@ -122,6 +136,27 @@ export function createDrizzleProjectDraftReadRepository(
           .where(eq(projects.id, projectId))
           .limit(1);
         return rows[0] === undefined ? null : mapProject(rows[0]);
+      }),
+    readFeatured: () =>
+      sessions.withSnapshot(async (session) => {
+        const rows = await session
+          .select({
+            revision: draftFeaturedState.revision,
+            slot1ProjectId: draftFeaturedState.slot1ProjectId,
+            slot2ProjectId: draftFeaturedState.slot2ProjectId,
+            slot3ProjectId: draftFeaturedState.slot3ProjectId,
+          })
+          .from(draftFeaturedState)
+          .where(eq(draftFeaturedState.singletonId, 1))
+          .limit(1);
+        const row = rows[0];
+        if (row === undefined) {
+          throw new Error("Draft featured singleton is missing");
+        }
+        return {
+          revision: row.revision,
+          slots: [row.slot1ProjectId, row.slot2ProjectId, row.slot3ProjectId],
+        };
       }),
   };
 }

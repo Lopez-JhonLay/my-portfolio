@@ -61,7 +61,9 @@ export class UncertainMutationError extends Error {
   readonly operationId: string;
 
   constructor(operationId: string) {
-    super("The save response was not received. Its outcome must be checked.");
+    super(
+      "The mutation response was not received. Its outcome must be checked.",
+    );
     this.name = "UncertainMutationError";
     this.operationId = operationId;
   }

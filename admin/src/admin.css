@@ -225,6 +225,68 @@ textarea:focus-visible {
 .sidebar-actions {
   margin: 1rem 0;
 }
+.publication-panel {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+}
+.publication-panel h3,
+.publication-panel > p:not(.eyebrow) {
+  margin: 0;
+}
+.publication-panel > p:not(.eyebrow) {
+  margin-bottom: 0.75rem;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.publication-panel .field-help {
+  display: block;
+  margin-top: 0.5rem;
+}
+.publication-status {
+  margin-top: 0.75rem;
+}
+.featured-panel {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.featured-panel h3,
+.featured-panel p {
+  margin: 0;
+}
+.featured-panel > p:not(.eyebrow) {
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.featured-panel fieldset {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.featured-slot {
+  display: grid;
+  gap: 0.25rem;
+  color: var(--ink-muted);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+.featured-slot select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.25rem;
+  color: var(--ink);
+  background: var(--surface);
+}
 .project-list {
   display: grid;
   gap: 0.375rem;

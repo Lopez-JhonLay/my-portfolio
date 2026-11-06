@@ -3,6 +3,8 @@ import { useMemo } from "react";
 import { ConflictPanel } from "./conflict-panel";
 import { createProjectClient } from "./project-client";
 import { ProjectForm } from "./project-form";
+import { useFeaturedDraft } from "./use-featured-draft";
+import { useProjectPublication } from "./use-project-publication";
 import { useProjectWorkspace } from "./use-project-workspace";
 
 type ProjectsDashboardProps = {
@@ -22,11 +24,29 @@ export function ProjectsDashboard({
 }: ProjectsDashboardProps) {
   const client = useMemo(() => createProjectClient(apiOrigin), [apiOrigin]);
   const workspace = useProjectWorkspace({ client, csrfToken, onUnauthorized });
+  const featured = useFeaturedDraft({ client, csrfToken, onUnauthorized });
+  const publication = useProjectPublication({
+    client,
+    csrfToken,
+    onUnauthorized,
+  });
+
+  async function requestPublish() {
+    if (workspace.dirty || featured.dirty) return;
+    if (
+      !window.confirm(
+        "Publish all saved Project updates now? Public content changes only if the complete publication succeeds.",
+      )
+    ) {
+      return;
+    }
+    await publication.publish();
+  }
 
   async function requestLogout() {
     if (
-      workspace.dirty &&
-      !window.confirm("Log out and discard your unsaved Project changes?")
+      (workspace.dirty || featured.dirty) &&
+      !window.confirm("Log out and discard your unsaved Admin changes?")
     ) {
       return;
     }
@@ -47,7 +67,11 @@ export function ProjectsDashboard({
             disabled={
               isLoggingOut ||
               workspace.isSaving ||
-              workspace.pendingOperation !== null
+              workspace.pendingOperation !== null ||
+              publication.isPublishing ||
+              publication.pendingOperationId !== null ||
+              featured.isSaving ||
+              featured.pendingOperationId !== null
             }
             onClick={() => void requestLogout()}
             type="button"
@@ -90,6 +114,142 @@ export function ProjectsDashboard({
               Reload
             </button>
           </div>
+
+          <section className="featured-panel" aria-labelledby="featured-title">
+            <p className="eyebrow">Homepage order</p>
+            <h3 id="featured-title">Featured Projects</h3>
+            <p>Select and save three distinct eligible Projects.</p>
+            <fieldset
+              disabled={
+                featured.isLoading ||
+                featured.isSaving ||
+                featured.pendingOperationId !== null
+              }
+            >
+              <legend className="sr-only">Featured Project slots</legend>
+              {featured.slots.map((projectId, index) => (
+                <label className="featured-slot" key={index}>
+                  <span>Slot {index + 1}</span>
+                  <select
+                    onChange={(event) =>
+                      featured.setSlot(
+                        index as 0 | 1 | 2,
+                        event.target.value === "" ? null : event.target.value,
+                      )
+                    }
+                    value={projectId ?? ""}
+                  >
+                    <option value="">Not selected</option>
+                    {workspace.projects
+                      .filter(
+                        (project) =>
+                          project.lifecycle === "active" &&
+                          project.publicationIntent === "include",
+                      )
+                      .map((project) => (
+                        <option
+                          disabled={
+                            project.id !== projectId &&
+                            featured.slots.includes(project.id)
+                          }
+                          key={project.id}
+                          value={project.id}
+                        >
+                          {project.draft.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              ))}
+            </fieldset>
+            <button
+              className="button"
+              disabled={
+                !featured.dirty ||
+                featured.isLoading ||
+                featured.isSaving ||
+                featured.pendingOperationId !== null
+              }
+              onClick={() => void featured.save()}
+              type="button"
+            >
+              {featured.isSaving ? "Saving…" : "Save featured"}
+            </button>
+            <div
+              className="publication-status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {featured.notice && (
+                <p className={`notice notice--${featured.notice.kind}`}>
+                  {featured.notice.message}
+                </p>
+              )}
+              {featured.pendingOperationId !== null && !featured.isSaving && (
+                <button
+                  className="button status-action"
+                  onClick={() => void featured.checkUnresolved()}
+                  type="button"
+                >
+                  Check featured save
+                </button>
+              )}
+            </div>
+          </section>
+
+          <section
+            className="publication-panel"
+            aria-labelledby="publication-title"
+          >
+            <p className="eyebrow">Public portfolio</p>
+            <h3 id="publication-title">Publish Updates</h3>
+            <p>
+              Publishes every saved eligible draft and the three saved featured
+              slots as one atomic snapshot.
+            </p>
+            <button
+              className="button button--primary"
+              disabled={
+                workspace.dirty ||
+                featured.dirty ||
+                featured.isLoading ||
+                featured.isSaving ||
+                featured.pendingOperationId !== null ||
+                workspace.isSaving ||
+                workspace.pendingOperation !== null ||
+                publication.isPublishing ||
+                publication.pendingOperationId !== null
+              }
+              onClick={() => void requestPublish()}
+              type="button"
+            >
+              {publication.isPublishing ? "Publishing…" : "Publish Updates"}
+            </button>
+            {(workspace.dirty || featured.dirty) && (
+              <p className="field-help">Save or discard Admin changes first.</p>
+            )}
+            <div
+              className="publication-status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {publication.notice && (
+                <p className={`notice notice--${publication.notice.kind}`}>
+                  {publication.notice.message}
+                </p>
+              )}
+              {publication.pendingOperationId !== null &&
+                !publication.isPublishing && (
+                  <button
+                    className="button status-action"
+                    onClick={() => void publication.checkUnresolved()}
+                    type="button"
+                  >
+                    Check publish status
+                  </button>
+                )}
+            </div>
+          </section>
 
           {workspace.isLoading && workspace.projects.length === 0 ? (
             <p className="sidebar-message" role="status">

@@ -14,6 +14,7 @@ import { createAdminProjectRouter } from "../../src/projects/admin-project-route
 import type { ProjectVersion } from "../../src/projects/project-contract.ts";
 import { createDrizzleProjectDraftReadRepository } from "../../src/projects/project-draft-read-repository.ts";
 import { createDrizzleProjectMutationService } from "../../src/projects/project-mutation-repository.ts";
+import { createDrizzleProjectPublicationService } from "../../src/projects/project-publication-repository.ts";
 import {
   openPostgresqlTestHarness,
   type PostgresqlTestHarness,
@@ -83,6 +84,9 @@ describe("authenticated Project draft API on PostgreSQL", () => {
       authRouter: auth.router,
       adminProjectRouter: createAdminProjectRouter({
         mutationService: createDrizzleProjectMutationService(
+          createDrizzleTransactionSessionBoundary(harness.database),
+        ),
+        publicationService: createDrizzleProjectPublicationService(
           createDrizzleTransactionSessionBoundary(harness.database),
         ),
         readRepository: createDrizzleProjectDraftReadRepository(
