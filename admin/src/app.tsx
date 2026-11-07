@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Navigate, useBlocker, useLocation } from "react-router-dom";
 
 import {
   createAuthClient,
   type AdminSession,
 } from "./features/auth/auth-client";
 import { ProjectsDashboard } from "./features/projects/projects-dashboard";
+import { AdminShell } from "./features/shell/admin-shell";
+import { resolveAdminView } from "./features/shell/admin-route";
+import { UnsavedChangesDialog } from "./features/shell/unsaved-changes-dialog";
 import { AdminApiError } from "./lib/admin-http";
 
 const DEFAULT_API_ORIGIN = "http://127.0.0.1:3000";
@@ -32,6 +36,18 @@ export function App() {
     status: "loading",
   });
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [confirmLogout, setConfirmLogout] = useState(false);
+  const discardChanges = useRef<() => void>(() => undefined);
+  const location = useLocation();
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      hasUnsavedChanges && currentLocation.pathname !== nextLocation.pathname,
+  );
+
+  const registerDiscardChanges = useCallback((discard: () => void) => {
+    discardChanges.current = discard;
+  }, []);
 
   const loadSession = useCallback(async () => {
     setSessionState({ status: "loading" });
@@ -133,13 +149,56 @@ export function App() {
     );
   }
 
+  const view = resolveAdminView(location.pathname);
+  if (view === null) {
+    return <Navigate replace to="/projects" />;
+  }
+
+  const csrfToken = session.csrfToken;
+
+  function requestLogout() {
+    if (hasUnsavedChanges) {
+      setConfirmLogout(true);
+      return;
+    }
+    void logout(csrfToken);
+  }
+
+  function cancelDiscard() {
+    if (blocker.state === "blocked") blocker.reset();
+    setConfirmLogout(false);
+  }
+
+  function confirmDiscard() {
+    discardChanges.current();
+    if (blocker.state === "blocked") {
+      blocker.proceed();
+      return;
+    }
+    if (confirmLogout) {
+      setConfirmLogout(false);
+      void logout(csrfToken);
+    }
+  }
+
   return (
-    <ProjectsDashboard
-      apiOrigin={origin}
-      csrfToken={session.csrfToken}
-      isLoggingOut={isLoggingOut}
-      onLogout={() => logout(session.csrfToken)}
-      onUnauthorized={markUnauthorized}
-    />
+    <>
+      <AdminShell isBusy={isLoggingOut} onLogout={requestLogout}>
+        <ProjectsDashboard
+          apiOrigin={origin}
+          csrfToken={csrfToken}
+          onDiscardReady={registerDiscardChanges}
+          onDirtyChange={setHasUnsavedChanges}
+          onUnauthorized={markUnauthorized}
+          view={view}
+        />
+      </AdminShell>
+      <UnsavedChangesDialog
+        action={blocker.state === "blocked" ? "leave" : "logout"}
+        onCancel={cancelDiscard}
+        onConfirm={confirmDiscard}
+        open={blocker.state === "blocked" || confirmLogout}
+      />
+    </>
   );
 }

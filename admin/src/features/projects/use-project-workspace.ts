@@ -15,6 +15,7 @@ import {
   parseAuthoritativeProject,
   type ProjectClient,
 } from "./project-client";
+import type { ProjectWorkspaceRoute } from "./project-workspace-route";
 
 const PENDING_OPERATION_KEY = "portfolio-cms:pending-project-save";
 const POLL_INTERVAL_MS = 5_000;
@@ -95,9 +96,11 @@ function isProject(
 export function useProjectWorkspace(options: {
   readonly client: ProjectClient;
   readonly csrfToken: string;
+  readonly initialRoute: ProjectWorkspaceRoute;
   readonly onUnauthorized: () => void;
 }) {
   const { client, csrfToken, onUnauthorized } = options;
+  const initialRoute = useRef(options.initialRoute);
   const [projects, setProjects] = useState<readonly AdminProject[]>([]);
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [form, setForm] = useState<ProjectFormValue>(EMPTY_PROJECT_FORM);
@@ -230,14 +233,31 @@ export function useProjectWorkspace(options: {
     try {
       const result = await client.list();
       setProjects(result.projects);
-      const first = result.projects[0];
-      if (first === undefined) {
+      const route = initialRoute.current;
+      if (route.kind === "list") {
         setEditor(null);
         setForm(EMPTY_PROJECT_FORM);
         setBaseline(EMPTY_PROJECT_FORM);
+      } else if (route.kind === "new") {
+        setEditor({ mode: "create", project: null });
+        setForm(EMPTY_PROJECT_FORM);
+        setBaseline(EMPTY_PROJECT_FORM);
       } else {
-        const nextForm = projectToForm(first);
-        setEditor({ mode: "edit", project: first });
+        const project = result.projects.find(
+          (item) => item.id === route.projectId,
+        );
+        if (project === undefined) {
+          setEditor(null);
+          setForm(EMPTY_PROJECT_FORM);
+          setBaseline(EMPTY_PROJECT_FORM);
+          setNotice({
+            kind: "error",
+            message: "The requested Project draft could not be found.",
+          });
+          return;
+        }
+        const nextForm = projectToForm(project);
+        setEditor({ mode: "edit", project });
         setForm(nextForm);
         setBaseline(nextForm);
       }
@@ -290,32 +310,49 @@ export function useProjectWorkspace(options: {
       });
       return false;
     }
-    return !dirty || window.confirm("Discard your unsaved Project changes?");
+    if (dirty) {
+      setNotice({
+        kind: "warning",
+        message: "Use the navigation confirmation to discard unsaved changes.",
+      });
+      return false;
+    }
+    return true;
   }
 
-  async function select(projectId: string) {
-    if (!confirmDiscard() || isSaving) return;
+  async function select(projectId: string): Promise<boolean> {
+    if (!confirmDiscard() || isSaving) return false;
     setIsLoading(true);
     setConflict(null);
     setNotice(null);
     try {
       applyProject(await client.read(projectId));
+      return true;
     } catch (error) {
       handleError(error);
+      return false;
     } finally {
       setIsLoading(false);
     }
   }
 
-  function createNew() {
-    if (!confirmDiscard() || isSaving) return;
+  function createNew(): boolean {
+    if (!confirmDiscard() || isSaving) return false;
     setEditor({ mode: "create", project: null });
     setForm(EMPTY_PROJECT_FORM);
     setBaseline(EMPTY_PROJECT_FORM);
     setErrors({});
     setConflict(null);
     setNotice(null);
+    return true;
   }
+
+  const discardChanges = useCallback(() => {
+    setForm(baseline);
+    setErrors({});
+    setConflict(null);
+    setNotice(null);
+  }, [baseline]);
 
   async function reload() {
     if (!confirmDiscard() || isSaving) return;
@@ -451,6 +488,7 @@ export function useProjectWorkspace(options: {
     conflict,
     checkUnresolved,
     createNew,
+    discardChanges,
     dirty,
     editor,
     errors,

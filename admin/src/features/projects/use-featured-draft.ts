@@ -188,6 +188,16 @@ export function useFeaturedDraft(options: {
     setNotice(null);
   }
 
+  function setAllSlots(nextSlots: FeaturedDraft["slots"]) {
+    setSlots(nextSlots);
+    setNotice(null);
+  }
+
+  const discardChanges = useCallback(() => {
+    setSlots(baseline);
+    setNotice(null);
+  }, [baseline]);
+
   async function save() {
     if (isSaving || pendingOperationId !== null || !dirty) return;
     const operationId = crypto.randomUUID();
@@ -266,12 +276,15 @@ export function useFeaturedDraft(options: {
 
   return {
     checkUnresolved,
+    discardChanges,
     dirty,
     isLoading,
     isSaving,
     notice,
     pendingOperationId,
     save,
+    savedSlots: baseline,
+    setAllSlots,
     setSlot,
     slots,
   };
