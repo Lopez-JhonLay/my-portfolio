@@ -8,6 +8,9 @@ void test("maps Admin paths to their workspace views", () => {
   assert.equal(resolveAdminView("/projects"), "projects");
   assert.equal(resolveAdminView("/projects/example"), "projects");
   assert.equal(resolveAdminView("/featured"), "featured");
+  assert.equal(resolveAdminView("/hero"), "hero");
+  assert.equal(resolveAdminView("/about"), "about");
+  assert.equal(resolveAdminView("/contact"), "contact");
   assert.equal(resolveAdminView("/publish"), "publish");
 });
 

@@ -1,10 +1,17 @@
-import { profile } from "@/data/portfolio";
+import PropTypes from "prop-types";
 
-export function Footer() {
+export function Footer({ content }) {
   return (
     <footer className="noir-footer">
-      <p className="type">(c) 2026 {profile.name} - Case file active</p>
-      <p>Built in the dark. Reads fine in the light.</p>
+      <p className="type">{content.footerPrimary}</p>
+      <p>{content.footerSecondary}</p>
     </footer>
   );
 }
+
+Footer.propTypes = {
+  content: PropTypes.shape({
+    footerPrimary: PropTypes.string.isRequired,
+    footerSecondary: PropTypes.string.isRequired,
+  }).isRequired,
+};

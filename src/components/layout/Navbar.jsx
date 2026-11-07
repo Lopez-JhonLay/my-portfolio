@@ -1,21 +1,21 @@
 import { Menu, X } from "lucide-react";
 import { FaSpider } from "react-icons/fa";
 import { useState } from "react";
-import { navItems, profile } from "@/data/portfolio";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
+import PropTypes from "prop-types";
 
-export function Navbar() {
+export function Navbar({ brand, navigation }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <header className="noir-nav">
       <a className="noir-brand" href="/#home" onClick={() => setIsOpen(false)}>
         <FaSpider aria-hidden="true" />
-        <span>{profile.brand}</span>
+        <span>{brand}</span>
       </a>
 
       <nav className="noir-desktop-nav" aria-label="Primary navigation">
-        {navItems.map((item) => (
+        {navigation.map((item) => (
           <a key={item.href} href={item.href}>
             {item.label}
           </a>
@@ -37,7 +37,7 @@ export function Navbar() {
 
       {isOpen ? (
         <nav className="noir-mobile-nav" aria-label="Mobile navigation">
-          {navItems.map((item) => (
+          {navigation.map((item) => (
             <a
               key={item.href}
               href={item.href}
@@ -51,3 +51,10 @@ export function Navbar() {
     </header>
   );
 }
+
+Navbar.propTypes = {
+  brand: PropTypes.string.isRequired,
+  navigation: PropTypes.arrayOf(
+    PropTypes.shape({ href: PropTypes.string.isRequired, label: PropTypes.string.isRequired }),
+  ).isRequired,
+};

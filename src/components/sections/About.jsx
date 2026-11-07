@@ -1,7 +1,7 @@
 import { User } from "lucide-react";
 import { motion } from "framer-motion";
 import profilePhoto from "@/assets/profile.jpg";
-import { about, profile } from "@/data/portfolio";
+import PropTypes from "prop-types";
 
 const PHOTO_WEB_HUB = { x: 360, y: 120 };
 const PHOTO_WEB_ANCHORS = [
@@ -48,7 +48,7 @@ function createPhotoWebRing(scale) {
   return `${path} Z`;
 }
 
-export function About() {
+export function About({ content, identity }) {
   return (
     <motion.section
       className="noir-section"
@@ -58,15 +58,15 @@ export function About() {
       viewport={{ once: true, amount: 0.25 }}
       transition={{ duration: 0.45 }}
     >
-      <div className="eyebrow type">{about.eyebrow}</div>
+      <div className="eyebrow type">{content.eyebrow}</div>
       <h2 className="section-title">
         <User />
-        {about.title}
+        {content.title}
       </h2>
-      <p className="section-lead">{about.lead}</p>
+      <p className="section-lead">{content.lead}</p>
 
       <div className="dossier">
-        <span className="dossier-stamp type">CLEARED</span>
+        <span className="dossier-stamp type">{content.stamp}</span>
         <aside className="dossier-photo-panel" aria-label="Profile photo">
           <div className="photo-web-stage">
             <svg
@@ -93,22 +93,22 @@ export function About() {
             <div className="photo-frame">
               <span className="tape tape-left" />
               <span className="tape tape-right" />
-              <img src={profilePhoto} alt={profile.name} />
+              <img src={profilePhoto} alt={identity.name} />
             </div>
           </div>
-          <p className="photo-caption type">Subject on record - {profile.location}</p>
+          <p className="photo-caption type">{content.photoCaptionPrefix} {identity.location}</p>
         </aside>
 
         <div className="dossier-body">
-          <h3>{profile.name}</h3>
-          <div className="subline type">{profile.role}</div>
-          {about.paragraphs.map((paragraph) => (
+          <h3>{identity.name}</h3>
+          <div className="subline type">{identity.role}</div>
+          {content.paragraphs.map((paragraph) => (
             <p key={paragraph}>{paragraph}</p>
           ))}
         </div>
 
         <div className="file-facts">
-          {about.facts.map((fact) => (
+          {content.facts.map((fact) => (
             <div key={fact.label}>
               <span className="k type">{fact.label}</span>
               <span className="v">{fact.value}</span>
@@ -119,3 +119,20 @@ export function About() {
     </motion.section>
   );
 }
+
+About.propTypes = {
+  content: PropTypes.shape({
+    eyebrow: PropTypes.string.isRequired,
+    facts: PropTypes.arrayOf(PropTypes.shape({ label: PropTypes.string.isRequired, value: PropTypes.string.isRequired })).isRequired,
+    lead: PropTypes.string.isRequired,
+    paragraphs: PropTypes.arrayOf(PropTypes.string).isRequired,
+    photoCaptionPrefix: PropTypes.string.isRequired,
+    stamp: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+  }).isRequired,
+  identity: PropTypes.shape({
+    location: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+    role: PropTypes.string.isRequired,
+  }).isRequired,
+};

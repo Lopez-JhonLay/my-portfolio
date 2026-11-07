@@ -6,6 +6,8 @@ import {
   type AdminSession,
 } from "./features/auth/auth-client";
 import { ProjectsDashboard } from "./features/projects/projects-dashboard";
+import { ContentEditorPage } from "./features/content/content-editor-page";
+import type { EditableContentSectionKey } from "./features/content/content-contract";
 import { AdminShell } from "./features/shell/admin-shell";
 import { resolveAdminView } from "./features/shell/admin-route";
 import { UnsavedChangesDialog } from "./features/shell/unsaved-changes-dialog";
@@ -184,14 +186,28 @@ export function App() {
   return (
     <>
       <AdminShell isBusy={isLoggingOut} onLogout={requestLogout}>
-        <ProjectsDashboard
-          apiOrigin={origin}
-          csrfToken={csrfToken}
-          onDiscardReady={registerDiscardChanges}
-          onDirtyChange={setHasUnsavedChanges}
-          onUnauthorized={markUnauthorized}
-          view={view}
-        />
+        {(["hero", "about", "contact"] as const).includes(
+          view as EditableContentSectionKey,
+        ) ? (
+          <ContentEditorPage
+            apiOrigin={origin}
+            csrfToken={csrfToken}
+            key={view}
+            onDiscardReady={registerDiscardChanges}
+            onDirtyChange={setHasUnsavedChanges}
+            onUnauthorized={markUnauthorized}
+            sectionKey={view as EditableContentSectionKey}
+          />
+        ) : (
+          <ProjectsDashboard
+            apiOrigin={origin}
+            csrfToken={csrfToken}
+            onDiscardReady={registerDiscardChanges}
+            onDirtyChange={setHasUnsavedChanges}
+            onUnauthorized={markUnauthorized}
+            view={view}
+          />
+        )}
       </AdminShell>
       <UnsavedChangesDialog
         action={blocker.state === "blocked" ? "leave" : "logout"}

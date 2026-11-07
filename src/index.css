@@ -923,6 +923,20 @@
     margin: 0;
   }
 
+  .content-load-notice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem max(1rem, 5vw);
+    border-bottom: 1px solid var(--line);
+    background: var(--paper-soft);
+  }
+
+  .content-load-notice p {
+    margin: 0;
+  }
+
   .back-projects-link {
     margin-top: 0;
   }

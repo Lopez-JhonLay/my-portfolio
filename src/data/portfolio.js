@@ -23,6 +23,21 @@ export const navItems = [
   { label: 'Contact', href: '/#contact' },
 ];
 
+export const heroContent = {
+  browserTitle: 'Vite + React',
+  name: profile.name,
+  brand: profile.brand,
+  role: profile.role,
+  heroRole: profile.heroRole,
+  location: profile.location,
+  navigation: navItems,
+  sectionTag: 'Case No. 001 - Open File',
+  title: profile.heroTitle,
+  description: profile.heroTag,
+  resumeButtonLabel: 'Download Portfolio',
+  scrollCue: 'Descend',
+};
+
 export const about = {
   eyebrow: '01 - Subject Profile',
   title: 'The Case File',
@@ -39,6 +54,8 @@ export const about = {
     { label: 'Focus', value: 'Web, Mobile, AI, DevOps' },
     { label: 'Status', value: 'Open to Work' },
   ],
+  stamp: 'CLEARED',
+  photoCaptionPrefix: 'Subject on record -',
 };
 
 export const personalProjects = [
@@ -171,3 +188,19 @@ export const socialLinks = [
     href: 'https://www.facebook.com/jhonlay.lopez.1',
   },
 ];
+
+export const contactContent = {
+  eyebrow: '05 - Make Contact',
+  title: 'Open a Line',
+  availability: profile.availability,
+  noteTitle: 'Leave Word',
+  noteBody:
+    'Send a message about internship opportunities, collaborations, or software projects worth building.',
+  email: profile.email,
+  socialLinks: socialLinks.map((link) => ({
+    ...link,
+    iconKey: link.label.toLowerCase(),
+  })),
+  footerPrimary: `(c) 2026 ${profile.name} - Case file active`,
+  footerSecondary: 'Built in the dark. Reads fine in the light.',
+};

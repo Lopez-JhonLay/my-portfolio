@@ -23,12 +23,12 @@ Complete management of all meaningful public portfolio content through the Admin
 
 ## In progress
 
-- Slice 1 implementation, isolated PostgreSQL verification, and the authorized Neon migration are complete: typed and seeded content-section persistence, protected draft/read APIs, durable save recovery, atomic publication integration, unified public snapshot, and Admin Overview readiness. Manual browser acceptance remains before closing the slice; the seven Neon drafts are seeded but not published.
+- Slice 1 implementation, isolated PostgreSQL verification, and the authorized Neon migration are complete. Slice 2 implementation is locally complete for Hero, About Me, and Contact editors plus published public rendering with per-section static fallback. Browser verification confirmed all three seeded Neon drafts load in Admin and the unpublished public site remains unchanged; owner edit/save/publish acceptance remains before closing these slices.
 
 ## Next tasks (ordered by priority)
 
 1. [ ] **Shared content model and publication integration:** implementation, non-database checks, disposable PostgreSQL verification, and the authorized Neon migration are complete; complete manual browser acceptance before closing the slice.
-2. [ ] **Hero, About Me, and Contact:** add consistent Admin editors and public integration for identity/navigation, Hero, About, Contact/social links, and footer content.
+2. [ ] **Hero, About Me, and Contact:** implementation and non-mutating browser smoke verification complete; finish owner edit/save/publish acceptance before closing the slice.
 3. [ ] **Timeline and Technologies:** add ordered editors, built-in icon selection, validation, publication integration, and public rendering.
 4. [ ] **Neon media, résumé, and Project galleries:** after separate dependency/provider/schema approval, implement private signed uploads, media references, safe replacement and cleanup, Project covers, safe Markdown/detail reads, prior-slug redirects, and `/projects/:slug` galleries.
 5. [ ] **Full browser verification:** complete protected full-site draft preview and verify public/Admin behavior, draft secrecy, accessibility, keyboard/focus, reduced motion, and responsive layouts at the approved viewports.
@@ -55,6 +55,7 @@ Complete management of all meaningful public portfolio content through the Admin
 - [x] Slice 1 local verification: `npm run quality:check` passed with 162 tests; public, Admin, and server production builds passed.
 - [x] Slice 1 persistence verification: both migrations and 29 integration tests passed against an approved disposable loopback-only PostgreSQL target; the target was stopped and removed afterward.
 - [x] Slice 1 Neon migration: `0001_sturdy_nick_fury` applied transactionally; all seven seeded drafts passed their application schemas, existing Project/operation counts were preserved, and no content section was published automatically.
+- [x] Slice 2 local verification: `npm run quality:check` passed with 169 tests; public, Admin, and server production builds passed. Browser smoke verification loaded the Hero, About Me, and Contact drafts from Neon and confirmed the configured public site retained its existing content before publication.
 - [ ] For each approved slice: run focused tests plus Admin/server/public lint, typecheck, format check, and builds affected by that slice.
 - [x] For Slice 1 persistence/publication changes: run `npm run test:integration --workspace @portfolio-cms/server` only against an explicitly approved isolated PostgreSQL test target and confirm cleanup.
 - [ ] For full-content acceptance: run Playwright public/Admin/preview regression coverage and the approved keyboard, accessibility, reduced-motion, and responsive checks.

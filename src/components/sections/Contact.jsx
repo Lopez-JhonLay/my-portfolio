@@ -1,15 +1,15 @@
 import { FaFacebook, FaGithub, FaLinkedin } from "react-icons/fa";
 import { ArrowUpRight, Mail, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
-import { profile, socialLinks } from "@/data/portfolio";
+import PropTypes from "prop-types";
 
 const socialIcons = {
-  GitHub: FaGithub,
-  LinkedIn: FaLinkedin,
-  Facebook: FaFacebook,
+  github: FaGithub,
+  linkedin: FaLinkedin,
+  facebook: FaFacebook,
 };
 
-export function Contact() {
+export function Contact({ content, location }) {
   return (
     <motion.section
       className="noir-section"
@@ -19,33 +19,30 @@ export function Contact() {
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.45 }}
     >
-      <div className="eyebrow type">05 - Make Contact</div>
+      <div className="eyebrow type">{content.eyebrow}</div>
       <h2 className="section-title">
         <Mail />
-        Open a Line
+        {content.title}
       </h2>
-      <p className="section-lead">{profile.availability}</p>
+      <p className="section-lead">{content.availability}</p>
 
       <div className="contact-wrap">
         <div className="contact-note">
-          <h3>Leave Word</h3>
-          <p>
-            Send a message about internship opportunities, collaborations, or
-            software projects worth building.
-          </p>
-          <a className="contact-line" href={`mailto:${profile.email}`}>
+          <h3>{content.noteTitle}</h3>
+          <p>{content.noteBody}</p>
+          <a className="contact-line" href={`mailto:${content.email}`}>
             <Mail />
-            <span>{profile.email}</span>
+            <span>{content.email}</span>
           </a>
           <p className="contact-line">
             <MapPin />
-            <span>{profile.location}</span>
+            <span>{location}</span>
           </p>
         </div>
 
         <div className="social-board" aria-label="Social links">
-          {socialLinks.map((link) => {
-            const Icon = socialIcons[link.label];
+          {content.socialLinks.map((link) => {
+            const Icon = socialIcons[link.iconKey];
             return (
               <a
                 className="social-link"
@@ -72,3 +69,20 @@ export function Contact() {
     </motion.section>
   );
 }
+
+Contact.propTypes = {
+  content: PropTypes.shape({
+    availability: PropTypes.string.isRequired,
+    email: PropTypes.string.isRequired,
+    eyebrow: PropTypes.string.isRequired,
+    noteBody: PropTypes.string.isRequired,
+    noteTitle: PropTypes.string.isRequired,
+    socialLinks: PropTypes.arrayOf(PropTypes.shape({
+      href: PropTypes.string.isRequired,
+      iconKey: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+    })).isRequired,
+    title: PropTypes.string.isRequired,
+  }).isRequired,
+  location: PropTypes.string.isRequired,
+};
