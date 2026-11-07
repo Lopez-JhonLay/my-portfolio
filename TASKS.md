@@ -1,10 +1,12 @@
 # Portfolio CMS Tasks
 
-Primary day-to-day tracker for the Projects-first MVP on `feature/portfolio-cms`. Detailed requirements and decisions remain in [`docs/specs/portfolio-cms-requirements.md`](docs/specs/portfolio-cms-requirements.md); this file records current delivery status and does not itself authorize implementation, Git writes, database operations, credentials, infrastructure, or deployment.
+Primary day-to-day tracker for completing full portfolio content management on `feature/portfolio-cms` before deployment. Detailed requirements and decisions remain in [`docs/specs/portfolio-cms-requirements.md`](docs/specs/portfolio-cms-requirements.md); this file records delivery status and does not itself authorize dependencies, database operations, migrations, credentials, infrastructure, Git writes, or deployment.
+
+The owner-approved full-content roadmap supersedes the Projects-first delivery priority in `CMS-SCOPE-MVP-001` while retaining the existing authentication, authorization, draft secrecy, publication, recovery, data-integrity, and verification requirements. Work traces primarily to `CMS-REQ-001`, `CMS-REQ-003–005`, `CMS-REQ-013–015`, `CMS-REQ-021`, and `CMS-REQ-023–027`.
 
 ## Current goal
 
-Proceed next with published Project detail reads, safe prior-slug redirects, and `/projects/:slug` only after separate owner authorization; keep the broader Projects-first MVP scope unchanged (`CMS-DEC-PROJ-009–013`).
+Complete management of all meaningful public portfolio content through the Admin CMS before deployment, using one atomic Publish Updates workflow and preserving current public content until each CMS replacement is successfully published.
 
 ## Completed
 
@@ -17,38 +19,42 @@ Proceed next with published Project detail reads, safe prior-slug redirects, and
 - [x] Preserve the existing public portfolio presentation boundary and legacy Project mapping on the Admin redesign baseline at `be90869`.
 - [x] Complete Stage 4 public integration for status, grouped and featured reads, first-publication fallback, loading/error/Retry states, CORS, caching, and draft isolation. Verification: 138 automated tests and all six manual browser checks passed.
 - [x] Complete Neon connectivity and the initial schema milestone. End-to-end smoke verification passed for GitHub login, persisted Project drafts, Featured selection, Publish Updates, and local public portfolio reads; the link-readiness requirement was also confirmed.
+- [x] Audit the current public content and approve the full-content CMS plan, including global publication, content ownership, private media, Project galleries, and built-in technology icons.
 
 ## In progress
 
-- No implementation task is active; the next priority remains owner-gated.
+- Slice 1 implementation, isolated PostgreSQL verification, and the authorized Neon migration are complete: typed and seeded content-section persistence, protected draft/read APIs, durable save recovery, atomic publication integration, unified public snapshot, and Admin Overview readiness. Manual browser acceptance remains before closing the slice; the seven Neon drafts are seeded but not published.
 
 ## Next tasks (ordered by priority)
 
-1. [ ] Deliver published Project detail reads by slug, safe prior-slug redirects, and the public `/projects/:slug` view; preserve the current external card action (`CMS-DEC-PROJ-009–013`).
-2. [ ] Complete Admin lifecycle actions for include/unpublish, Trash, and Restore, with publication-safe behavior and focused API/UI tests (`CMS-DEC-PROJ-002–004`).
-3. [ ] Add approved safe Markdown rendering and URL handling for long descriptions; fall back to the short description when absent (`CMS-DEC-PROJ-010–012`).
-4. [ ] Build authenticated full-site draft preview for `/`, `/all-projects`, and `/projects/:slug` using public presentation components, a persistent preview label, and strict draft/cache/style isolation (`CMS-DEC-PROJ-016`).
-5. [ ] Close MVP verification gaps: auth/session/CSRF denial cases, publication-to-public-read flow, keyboard/focus/status announcements, responsive public/Admin regressions, and end-to-end coverage (`CMS-REQ-023`).
-6. [ ] Prepare the owner-approved static-content migration, fallback/cutover/rollback, backup/restore rehearsal, zero-cost hosting checks, and deployment runbook; execute external or production operations only with separate approval.
+1. [ ] **Shared content model and publication integration:** implementation, non-database checks, disposable PostgreSQL verification, and the authorized Neon migration are complete; complete manual browser acceptance before closing the slice.
+2. [ ] **Hero, About Me, and Contact:** add consistent Admin editors and public integration for identity/navigation, Hero, About, Contact/social links, and footer content.
+3. [ ] **Timeline and Technologies:** add ordered editors, built-in icon selection, validation, publication integration, and public rendering.
+4. [ ] **Neon media, résumé, and Project galleries:** after separate dependency/provider/schema approval, implement private signed uploads, media references, safe replacement and cleanup, Project covers, safe Markdown/detail reads, prior-slug redirects, and `/projects/:slug` galleries.
+5. [ ] **Full browser verification:** complete protected full-site draft preview and verify public/Admin behavior, draft secrecy, accessibility, keyboard/focus, reduced motion, and responsive layouts at the approved viewports.
+6. [ ] Complete Admin lifecycle actions for include/unpublish, Trash, and Restore when required for publication safety (`CMS-DEC-PROJ-002–004`).
+7. [ ] After all content slices pass acceptance, prepare owner-approved backup/restore rehearsal, migration cutover and rollback, production hardening, zero-cost hosting checks, Render/Vercel deployment, and the deployment runbook.
 
 ## Deferred
 
 - Advanced operation cleanup, backup-attestation/audit reporting, temporary-file handling, and incident-resolution subsystems (`CMS-DEC-PROJ-047–067`).
-- Pages, Skills, and future content types beyond Projects (`CMS-SCOPE-MVP-001`).
+- Blog, general SEO management beyond the approved portfolio-facing copy, and content types not displayed by the current portfolio.
 - Permanent deletion until published-reference and redirect behavior is explicitly approved.
-- Dependency upgrades, infrastructure optimization, and visual redesign work not required for the Projects MVP.
+- Dependency upgrades, infrastructure optimization, and visual redesign work not required for full portfolio content management.
 
-## Genuine blockers
+## Genuine blockers and gates
 
-- Safe Markdown/link policy, linkless/internal-detail behavior, published-Project Restore semantics, permanent deletion/redirect behavior, and the protected-preview delivery/isolation mechanism still require explicit owner decisions before those affected slices are completed.
+- Further Neon schema/data changes remain separately owner-gated. Slice 1 migration `0001_sturdy_nick_fury` was explicitly authorized, applied transactionally, and verified with seven valid draft sections and zero published content sections.
+- Object Storage provisioning, credentials, uploads, SDK/file-signature dependencies, and provider changes remain separately gated until Slice 4.
+- Playwright setup or dependency changes remain separately gated until browser-verification work is approved.
 - Production work remains gated on credentials, provider/cost validation, backup and restore approval/rehearsal, migration/cutover/rollback approval, complete test acceptance, and separate database/infrastructure/deployment authorization.
-- The latest isolated PostgreSQL integration rerun remains pending and requires an explicitly approved isolated test target; Stage 4 otherwise passed its automated and manual verification.
 
 ## Minimal verification checklist
 
-- [x] `git diff --check`
-- [x] `npm run quality:check`
-- [x] `npm run build`
-- [x] `npm run build --workspace @portfolio-cms/server`
-- [x] Run focused tests for the changed behavior and manually verify loading, empty/never-published, error/Retry, keyboard, responsive, and no-draft-leak cases.
-- [ ] When persistence/publication changes: run `npm run test:integration --workspace @portfolio-cms/server` only against an approved isolated PostgreSQL test target and confirm cleanup.
+- [x] Existing baseline: 138 automated tests and six manual browser checks passed for the completed Projects public-integration milestone.
+- [x] Slice 1 local verification: `npm run quality:check` passed with 162 tests; public, Admin, and server production builds passed.
+- [x] Slice 1 persistence verification: both migrations and 29 integration tests passed against an approved disposable loopback-only PostgreSQL target; the target was stopped and removed afterward.
+- [x] Slice 1 Neon migration: `0001_sturdy_nick_fury` applied transactionally; all seven seeded drafts passed their application schemas, existing Project/operation counts were preserved, and no content section was published automatically.
+- [ ] For each approved slice: run focused tests plus Admin/server/public lint, typecheck, format check, and builds affected by that slice.
+- [x] For Slice 1 persistence/publication changes: run `npm run test:integration --workspace @portfolio-cms/server` only against an explicitly approved isolated PostgreSQL test target and confirm cleanup.
+- [ ] For full-content acceptance: run Playwright public/Admin/preview regression coverage and the approved keyboard, accessibility, reduced-motion, and responsive checks.

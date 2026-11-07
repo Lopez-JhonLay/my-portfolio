@@ -12,7 +12,15 @@ Use this order when sources differ:
 4. [Architecture](docs/ARCHITECTURE.md), [design-system](docs/DESIGN-SYSTEM.md), and [progress-tracker](docs/PROGRESS-TRACKER.md) documentation, according to their status labels.
 5. Existing source and repository conventions.
 
-Documentation describes state; it does not grant implementation or operational authority. Trace work to applicable `CMS-REQ-*`, `CMS-DEC-PROJ-*`, and `CMS-SCOPE-*` identifiers. Follow requirements -> approved technical design -> approved task -> implementation -> verification -> report -> STOP. Obtain explicit owner approval before every implementation task and do not continue automatically to the next task or milestone.
+Documentation describes state; it does not grant implementation or operational authority. Trace work to applicable `CMS-REQ-*`, `CMS-DEC-PROJ-*`, and `CMS-SCOPE-*` identifiers. Follow requirements -> `TASKS.md` priority -> short plan when needed -> approved implementation task -> verification -> report -> STOP; consult an approved technical specification when the task depends on one. Obtain explicit owner approval before every implementation task and do not continue automatically to the next task or milestone.
+
+## Day-to-day development workflow
+
+- Use root [`TASKS.md`](TASKS.md) as the current priority and status tracker; keep the longer specifications as reference material.
+- Use native Codex Plan Mode for complex changes and Agent Mode for implementation. Prefer short plans and small end-to-end tasks that deliver and verify working behavior.
+- Reuse existing repository evidence. Avoid repeated discovery, unnecessary specification files, and documentation-only work unless the owner requests it or an unresolved security, data-integrity, or operational decision genuinely requires it.
+- Update `TASKS.md` after meaningful milestones; do not duplicate detailed requirements there.
+- This lean workflow does not relax authentication, backend authorization, credential and draft secrecy, data-integrity, verification, Git, database, infrastructure, or deployment protections in this file and the approved requirements baseline.
 
 ## Application boundaries
 

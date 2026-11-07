@@ -2,6 +2,11 @@ import { createHash } from "node:crypto";
 
 import type { TransactionSessionBoundary } from "../db/database-session.ts";
 import {
+  parseContentDocument,
+  type ContentDocument,
+  type ContentSectionKey,
+} from "../content/content-contract.ts";
+import {
   projectPublishCandidateSchema,
   type ProjectId,
   type ProjectPublishCandidate,
@@ -54,6 +59,10 @@ export type PublicationCandidateState = {
     readonly slug: string;
   }[];
   readonly snapshotRevision: bigint | null;
+  readonly contentSections?: readonly {
+    readonly sectionKey: ContentSectionKey;
+    readonly document: ContentDocument;
+  }[];
 };
 
 export type ProjectPublicationQueries = {
@@ -71,6 +80,10 @@ export type ProjectPublicationQueries = {
   lockCandidate(): Promise<PublicationCandidateState>;
   publishSnapshot(input: {
     readonly candidate: ProjectPublishCandidate;
+    readonly contentSections: readonly {
+      readonly sectionKey: ContentSectionKey;
+      readonly document: ContentDocument;
+    }[];
     readonly operationId: string;
     readonly snapshotRevision: bigint;
   }): Promise<void>;
@@ -157,9 +170,13 @@ function resolveOperation(
     : conflict(operation.operationId);
 }
 
-function validateCandidate(
-  state: PublicationCandidateState,
-): ProjectPublishCandidate | null {
+function validateCandidate(state: PublicationCandidateState): {
+  readonly candidate: ProjectPublishCandidate;
+  readonly contentSections: readonly {
+    readonly sectionKey: ContentSectionKey;
+    readonly document: ContentDocument;
+  }[];
+} | null {
   const parsed = projectPublishCandidateSchema.safeParse({
     projects: state.projects,
     featuredProjectIds: state.featuredProjectIds,
@@ -194,7 +211,18 @@ function validateCandidate(
     return null;
   }
 
-  return parsed.data;
+  const contentSections = state.contentSections ?? [];
+  try {
+    return {
+      candidate: parsed.data,
+      contentSections: contentSections.map(({ sectionKey, document }) => ({
+        sectionKey,
+        document: parseContentDocument(sectionKey, document),
+      })),
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -270,8 +298,8 @@ export function createProjectPublicationService<Session>(
           if (operation.status !== "pending") return operationView(operation);
 
           const state = await queries.lockCandidate();
-          const candidate = validateCandidate(state);
-          if (candidate === null) {
+          const publication = validateCandidate(state);
+          if (publication === null) {
             return complete(queries, operationId, {
               status: "failed",
               outcomeCode: "publish_not_ready",
@@ -281,7 +309,8 @@ export function createProjectPublicationService<Session>(
 
           const snapshotRevision = (state.snapshotRevision ?? 0n) + 1n;
           await queries.publishSnapshot({
-            candidate,
+            candidate: publication.candidate,
+            contentSections: publication.contentSections,
             operationId,
             snapshotRevision,
           });

@@ -15,6 +15,8 @@ const REVIEWED_STATEMENT_PREFIXES = [
   "CREATE TYPE ",
   "CREATE TABLE ",
   'INSERT INTO "draft_featured_state" ',
+  'INSERT INTO "content_section_drafts" ',
+  "ALTER TYPE ",
   "ALTER TABLE ",
   "CREATE UNIQUE INDEX ",
 ] as const;
@@ -29,6 +31,13 @@ const EXPECTED_PUBLIC_QUALIFIERS = new Map([
   ["project_operations", 1],
   ["published_projects", 3],
 ]);
+const EXPECTED_CONTENT_MIGRATION_PUBLIC_QUALIFIERS = new Map([
+  ["content_section_key", 1],
+  ["project_operation_kind", 1],
+]);
+const CURRENT_ADDITIONAL_MIGRATION_URLS = [
+  new URL("../../drizzle/0001_sturdy_nick_fury.sql", import.meta.url),
+] as const;
 
 export type PostgresqlTestTarget = {
   readonly connectionString: string;
@@ -134,7 +143,10 @@ function assertReviewedStatements(migrationSql: string): void {
   }
 }
 
-function assertKnownPublicQualifiers(migrationSql: string): void {
+function assertKnownPublicQualifiers(
+  migrationSql: string,
+  expectedQualifiers = EXPECTED_PUBLIC_QUALIFIERS,
+): void {
   const actualCounts = new Map<string, number>();
   const qualifierPattern = /"public"\."([a-z_]+)"/g;
 
@@ -151,8 +163,8 @@ function assertKnownPublicQualifiers(migrationSql: string): void {
   }
 
   const exactMatch =
-    actualCounts.size === EXPECTED_PUBLIC_QUALIFIERS.size &&
-    [...EXPECTED_PUBLIC_QUALIFIERS].every(
+    actualCounts.size === expectedQualifiers.size &&
+    [...expectedQualifiers].every(
       ([qualifiedName, count]) => actualCounts.get(qualifiedName) === count,
     );
 
@@ -185,6 +197,20 @@ export function rebaseMigrationSql(
   }
 
   return rebasedSql;
+}
+
+/** Rewrites only the reviewed full-content migration qualifiers. */
+export function rebaseContentMigrationSql(
+  migrationSql: string,
+  schemaName: string,
+): string {
+  assertTemporarySchemaName(schemaName);
+  assertKnownPublicQualifiers(
+    migrationSql,
+    EXPECTED_CONTENT_MIGRATION_PUBLIC_QUALIFIERS,
+  );
+  assertReviewedStatements(migrationSql);
+  return migrationSql.replaceAll('"public".', `"${schemaName}".`);
 }
 
 function quoteValidatedSchemaName(schemaName: string): string {
@@ -238,12 +264,22 @@ async function readSchemaOwnership(
 export async function openPostgresqlTestHarness(options: {
   readonly environment: Readonly<NodeJS.ProcessEnv>;
   readonly migrationUrl: URL;
+  readonly additionalMigrationUrls?: readonly URL[];
 }): Promise<PostgresqlTestHarness> {
   const target = validatePostgresqlTestTarget(options.environment);
   const schemaName = createTemporarySchemaName();
   const quotedSchemaName = quoteValidatedSchemaName(schemaName);
   const migrationSql = await readFile(options.migrationUrl, "utf8");
   const rebasedMigrationSql = rebaseMigrationSql(migrationSql, schemaName);
+  const additionalMigrations = await Promise.all(
+    (options.additionalMigrationUrls ?? CURRENT_ADDITIONAL_MIGRATION_URLS).map(
+      async (migrationUrl) =>
+        rebaseContentMigrationSql(
+          await readFile(migrationUrl, "utf8"),
+          schemaName,
+        ),
+    ),
+  );
   const client = new Client({
     application_name: "portfolio-cms-integration-test",
     connectionString: target.connectionString,
@@ -277,6 +313,12 @@ export async function openPostgresqlTestHarness(options: {
     ownerName = identity.ownerName;
     await client.query(rebasedMigrationSql);
     await client.query("COMMIT");
+    for (const additionalMigration of additionalMigrations) {
+      await client.query("BEGIN");
+      await client.query(`SET search_path TO ${quotedSchemaName}`);
+      await client.query(additionalMigration);
+      await client.query("COMMIT");
+    }
   } catch (error) {
     await client.query("ROLLBACK").catch(() => undefined);
     await client.end().catch(() => undefined);

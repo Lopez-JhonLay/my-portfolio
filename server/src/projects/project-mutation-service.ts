@@ -9,7 +9,8 @@ import type {
 
 export type MutationOperationKind =
   "save_project_draft" | "save_featured_draft";
-export type PersistedOperationKind = MutationOperationKind | "publish";
+export type PersistedOperationKind =
+  MutationOperationKind | "save_content_draft" | "publish";
 export type MutationOutcomeCode =
   | "project_draft_created"
   | "project_draft_saved"
@@ -146,7 +147,7 @@ function fingerprint(intent: unknown): string {
 function operationView(
   operation: MutationOperationRecord,
 ): MutationOperationView {
-  if (operation.kind === "publish") {
+  if (operation.kind === "publish" || operation.kind === "save_content_draft") {
     throw new ProjectMutationConsistencyError(
       "Publication operation cannot be exposed as a draft mutation",
     );
@@ -499,7 +500,8 @@ export function createProjectMutationService<Session>(
           await createQueries(session).readOperation(operationId);
         return operation === null
           ? { status: "not-found" as const }
-          : operation.kind === "publish"
+          : operation.kind === "publish" ||
+              operation.kind === "save_content_draft"
             ? { status: "operation-conflict" as const, operationId }
             : operationView(operation);
       }),

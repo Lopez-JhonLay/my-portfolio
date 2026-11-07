@@ -4,6 +4,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import type { AdminView } from "../shell/admin-route";
 import { OperationAlert } from "../shell/operation-alert";
+import { createContentClient } from "../content/content-client";
+import { useContentReadiness } from "../content/use-content-readiness";
 
 import { ConflictPanel } from "./conflict-panel";
 import { createProjectClient } from "./project-client";
@@ -76,6 +78,14 @@ export function ProjectsDashboard({
     [resolvedProjectRoute, view],
   );
   const client = useMemo(() => createProjectClient(apiOrigin), [apiOrigin]);
+  const contentClient = useMemo(
+    () => createContentClient(apiOrigin),
+    [apiOrigin],
+  );
+  const contentReadiness = useContentReadiness({
+    client: contentClient,
+    onUnauthorized,
+  });
   const workspace = useProjectWorkspace({
     client,
     csrfToken,
@@ -188,6 +198,21 @@ export function ProjectsDashboard({
                 {featured.dirty
                   ? "Selection has unsaved changes."
                   : "Saved selection is loaded."}
+              </p>
+            </section>
+            <section>
+              <span>Content sections</span>
+              <strong>
+                {contentReadiness.status === "ready"
+                  ? `${contentReadiness.sections.filter((section) => section.isPublished).length} of ${contentReadiness.sections.length}`
+                  : "—"}
+              </strong>
+              <p>
+                {contentReadiness.status === "loading"
+                  ? "Loading content readiness…"
+                  : contentReadiness.status === "error"
+                    ? "Content readiness could not be loaded."
+                    : "Published sections are included in the global snapshot."}
               </p>
             </section>
             <section>

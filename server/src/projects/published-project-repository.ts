@@ -24,6 +24,7 @@ import type {
 
 export type PublishedStateRecord = {
   featuredProjectIds: readonly [ProjectId, ProjectId, ProjectId];
+  snapshotRevision: bigint;
 };
 
 export type PublishedProjectRecord = {
@@ -147,6 +148,7 @@ export function createDrizzlePublishedProjectReadQueries(
     readPublishedState: async () => {
       const rows = await session
         .select({
+          snapshotRevision: publishedState.snapshotRevision,
           slot1ProjectId: publishedState.slot1ProjectId,
           slot2ProjectId: publishedState.slot2ProjectId,
           slot3ProjectId: publishedState.slot3ProjectId,
@@ -163,6 +165,7 @@ export function createDrizzlePublishedProjectReadQueries(
               state.slot2ProjectId,
               state.slot3ProjectId,
             ],
+            snapshotRevision: state.snapshotRevision,
           };
     },
     readPublishedProjects: async () =>

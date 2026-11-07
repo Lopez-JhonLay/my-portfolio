@@ -5,14 +5,17 @@ import type {
   TransactionSessionBoundary,
 } from "../db/database-session.ts";
 import {
+  contentSectionDrafts,
   draftFeaturedState,
   projectDrafts,
   projectOperations,
   projects,
   publishedProjects,
+  publishedContentSections,
   publishedSlugs,
   publishedState,
 } from "../db/schema/project-schema.ts";
+import { parseContentDocument } from "../content/content-contract.ts";
 import type { ProjectRecord, ProjectVersion } from "./project-contract.ts";
 import {
   createProjectPublicationService,
@@ -198,6 +201,14 @@ export function createDrizzleProjectPublicationQueries(
         .from(publishedSlugs)
         .orderBy(asc(publishedSlugs.slug))
         .for("update");
+      const contentRows = await session
+        .select({
+          sectionKey: contentSectionDrafts.sectionKey,
+          document: contentSectionDrafts.document,
+        })
+        .from(contentSectionDrafts)
+        .orderBy(asc(contentSectionDrafts.sectionKey))
+        .for("update");
 
       return {
         featuredProjectIds: [
@@ -214,9 +225,18 @@ export function createDrizzleProjectPublicationQueries(
         })),
         reservedSlugs: slugRows,
         snapshotRevision: snapshotRows[0]?.snapshotRevision ?? null,
+        contentSections: contentRows.map((row) => ({
+          sectionKey: row.sectionKey,
+          document: parseContentDocument(row.sectionKey, row.document),
+        })),
       };
     },
-    publishSnapshot: async ({ candidate, operationId, snapshotRevision }) => {
+    publishSnapshot: async ({
+      candidate,
+      contentSections,
+      operationId,
+      snapshotRevision,
+    }) => {
       const included = candidate.projects.filter(
         (project) =>
           project.lifecycle === "active" &&
@@ -225,11 +245,17 @@ export function createDrizzleProjectPublicationQueries(
       const includedIds = included.map((project) => project.id);
 
       await session.delete(publishedState);
+      await session.delete(publishedContentSections);
       await session.delete(publishedProjects);
       if (included.length > 0) {
         await session
           .insert(publishedProjects)
           .values(included.map(publishedValues));
+      }
+      if (contentSections.length > 0) {
+        await session
+          .insert(publishedContentSections)
+          .values([...contentSections]);
       }
       if (includedIds.length > 0) {
         await session

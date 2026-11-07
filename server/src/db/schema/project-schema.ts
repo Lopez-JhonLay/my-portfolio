@@ -4,6 +4,7 @@ import {
   check,
   foreignKey,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -17,6 +18,11 @@ import {
   PROJECT_CATEGORY_ORDER,
   type ProjectId,
 } from "../../projects/project-contract.ts";
+import {
+  CONTENT_SECTION_KEYS,
+  type ContentDocument,
+  type ContentSectionKey,
+} from "../../content/content-contract.ts";
 
 export const projectCategoryEnum = pgEnum(
   "project_category",
@@ -37,8 +43,13 @@ export const publishedSlugKindEnum = pgEnum("published_slug_kind", [
 export const projectOperationKindEnum = pgEnum("project_operation_kind", [
   "save_project_draft",
   "save_featured_draft",
+  "save_content_draft",
   "publish",
 ]);
+export const contentSectionKeyEnum = pgEnum(
+  "content_section_key",
+  CONTENT_SECTION_KEYS,
+);
 export const projectOperationStatusEnum = pgEnum("project_operation_status", [
   "pending",
   "succeeded",
@@ -236,6 +247,9 @@ export const projectOperations = pgTable(
         onDelete: "restrict",
         onUpdate: "restrict",
       }),
+    contentSectionKey: contentSectionKeyEnum(
+      "content_section_key",
+    ).$type<ContentSectionKey>(),
     requestFingerprint: text("request_fingerprint").notNull(),
     status: projectOperationStatusEnum("status").default("pending").notNull(),
     outcomeCode: text("outcome_code"),
@@ -256,7 +270,7 @@ export const projectOperations = pgTable(
     ),
     check(
       "project_operations_target_matches_kind",
-      sql`(${table.kind} = 'save_project_draft' AND ${table.projectId} IS NOT NULL) OR (${table.kind} <> 'save_project_draft' AND ${table.projectId} IS NULL)`,
+      sql`(${table.kind}::text = 'save_project_draft' AND ${table.projectId} IS NOT NULL AND ${table.contentSectionKey} IS NULL) OR (${table.kind}::text = 'save_content_draft' AND ${table.projectId} IS NULL AND ${table.contentSectionKey} IS NOT NULL) OR (${table.kind}::text IN ('save_featured_draft', 'publish') AND ${table.projectId} IS NULL AND ${table.contentSectionKey} IS NULL)`,
     ),
     check(
       "project_operations_result_revision_positive",
@@ -269,6 +283,48 @@ export const projectOperations = pgTable(
     check(
       "project_operations_completion_matches_status",
       sql`(${table.status} = 'pending' AND ${table.completedAt} IS NULL AND ${table.outcomeCode} IS NULL AND ${table.resultRevision} IS NULL) OR (${table.status} <> 'pending' AND ${table.completedAt} IS NOT NULL)`,
+    ),
+  ],
+);
+
+export const contentSectionDrafts = pgTable(
+  "content_section_drafts",
+  {
+    sectionKey: contentSectionKeyEnum("section_key")
+      .$type<ContentSectionKey>()
+      .primaryKey(),
+    document: jsonb("document").$type<ContentDocument>().notNull(),
+    revision: bigint("revision", { mode: "bigint" })
+      .default(sql`1`)
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    check(
+      "content_section_drafts_revision_positive",
+      sql`${table.revision} > 0`,
+    ),
+    check(
+      "content_section_drafts_document_object",
+      sql`jsonb_typeof(${table.document}) = 'object'`,
+    ),
+  ],
+);
+
+export const publishedContentSections = pgTable(
+  "published_content_sections",
+  {
+    sectionKey: contentSectionKeyEnum("section_key")
+      .$type<ContentSectionKey>()
+      .primaryKey(),
+    document: jsonb("document").$type<ContentDocument>().notNull(),
+  },
+  (table) => [
+    check(
+      "published_content_sections_document_object",
+      sql`jsonb_typeof(${table.document}) = 'object'`,
     ),
   ],
 );

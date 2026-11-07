@@ -14,6 +14,7 @@ import {
 import type { MutationOperationRecord } from "./project-mutation-service.ts";
 
 type PublishedSnapshot = {
+  readonly contentSectionKeys: readonly string[];
   readonly operationId: string;
   readonly projectNames: readonly string[];
   readonly revision: bigint;
@@ -29,6 +30,10 @@ type FakeState = {
   ];
   published: PublishedSnapshot | null;
   publishExecutions: number;
+  contentSections: readonly {
+    sectionKey: "media-resume";
+    document: { profileImageMediaId: null; resumeMediaId: null };
+  }[];
 };
 
 function createDraft(
@@ -78,8 +83,13 @@ function copyState(state: FakeState): FakeState {
         : {
             ...state.published,
             projectNames: [...state.published.projectNames],
+            contentSectionKeys: [...state.published.contentSectionKeys],
           },
     publishExecutions: state.publishExecutions,
+    contentSections: state.contentSections.map((section) => ({
+      ...section,
+      document: { ...section.document },
+    })),
   };
 }
 
@@ -94,6 +104,12 @@ function createFakeService() {
     featuredProjectIds: [firstProject.id, secondProject.id, thirdProject.id],
     published: null,
     publishExecutions: 0,
+    contentSections: [
+      {
+        sectionKey: "media-resume",
+        document: { profileImageMediaId: null, resumeMediaId: null },
+      },
+    ],
   };
   let transactionState = state;
   let failPublication = false;
@@ -138,13 +154,20 @@ function createFakeService() {
         projects: session.projects,
         reservedSlugs: [] as const,
         snapshotRevision: session.published?.revision ?? null,
+        contentSections: session.contentSections,
       }),
     lockOperation: (operationId) =>
       Promise.resolve(session.operations.get(operationId) ?? null),
-    publishSnapshot: ({ candidate, operationId, snapshotRevision }) => {
+    publishSnapshot: ({
+      candidate,
+      contentSections,
+      operationId,
+      snapshotRevision,
+    }) => {
       session.publishExecutions += 1;
       session.published = {
         operationId,
+        contentSectionKeys: contentSections.map(({ sectionKey }) => sectionKey),
         projectNames: candidate.projects
           .filter(
             (project) =>
@@ -198,6 +221,7 @@ describe("Project publication service", () => {
       snapshotRevision: 1n,
     });
     expect(context.getState().published).toMatchObject({
+      contentSectionKeys: ["media-resume"],
       projectNames: ["Project 1", "Project 2", "Project 3"],
       revision: 1n,
     });

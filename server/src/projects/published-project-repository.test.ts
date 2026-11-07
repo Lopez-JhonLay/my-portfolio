@@ -160,6 +160,7 @@ describe("published Project read repository", () => {
   it("reports published only when the authoritative state row exists", async () => {
     const context = createFakeRepository({
       state: {
+        snapshotRevision: 1n,
         featuredProjectIds: [
           projectIdSchema.parse("one"),
           projectIdSchema.parse("two"),
@@ -175,6 +176,7 @@ describe("published Project read repository", () => {
 
   it("returns fixed categories and published within-category order as public DTOs", async () => {
     const state: PublishedStateRecord = {
+      snapshotRevision: 1n,
       featuredProjectIds: [
         projectIdSchema.parse("personal-two"),
         projectIdSchema.parse("work-one"),
@@ -234,6 +236,7 @@ describe("published Project read repository", () => {
 
   it("returns featured cards in slot order rather than query order", async () => {
     const state: PublishedStateRecord = {
+      snapshotRevision: 1n,
       featuredProjectIds: [
         projectIdSchema.parse("capstone-one"),
         projectIdSchema.parse("personal-one"),
@@ -275,6 +278,7 @@ describe("published Project read repository", () => {
   it("returns current details, safe redirects, and public not-found outcomes", async () => {
     const project = createProject({ slug: "current-project" });
     const state: PublishedStateRecord = {
+      snapshotRevision: 1n,
       featuredProjectIds: [
         projectIdSchema.parse("one"),
         projectIdSchema.parse("two"),
@@ -322,6 +326,7 @@ describe("published Project read repository", () => {
 
   it("rejects a published snapshot with a missing featured Project", async () => {
     const state: PublishedStateRecord = {
+      snapshotRevision: 1n,
       featuredProjectIds: [
         projectIdSchema.parse("one"),
         projectIdSchema.parse("two"),

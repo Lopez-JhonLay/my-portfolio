@@ -9,6 +9,13 @@ import {
   createDrizzleTransactionSessionBoundary,
 } from "./db/database-session.ts";
 import { createDatabaseRuntime } from "./db/database.ts";
+import { createAdminContentRouter } from "./content/admin-content-router.ts";
+import {
+  createDrizzleAdminContentReadRepository,
+  createDrizzleContentMutationService,
+} from "./content/content-repository.ts";
+import { createPublicPortfolioRouter } from "./content/public-portfolio-router.ts";
+import { createDrizzlePublicPortfolioRepository } from "./content/public-portfolio-repository.ts";
 import { createAdminProjectRouter } from "./projects/admin-project-router.ts";
 import { createDrizzleProjectDraftReadRepository } from "./projects/project-draft-read-repository.ts";
 import { createDrizzleProjectMutationService } from "./projects/project-mutation-repository.ts";
@@ -58,9 +65,25 @@ function startServer(environment: ServerEnvironment): void {
   const app = createApp({
     adminOrigin: environment.adminOrigin,
     authRouter: auth.router,
+    adminContentRouter: createAdminContentRouter({
+      mutationService: createDrizzleContentMutationService(
+        createDrizzleTransactionSessionBoundary(databaseRuntime.database),
+      ),
+      readRepository: createDrizzleAdminContentReadRepository(
+        createDrizzleSnapshotSessionBoundary(databaseRuntime.database),
+      ),
+      requireAdmin: auth.requireAdmin,
+      requireCsrf: auth.requireCsrf,
+    }),
     publicProjectRouter: createPublicProjectRouter({
       publicOrigin: environment.publicOrigin,
       repository: createDrizzlePublishedProjectReadRepository(
+        createDrizzleSnapshotSessionBoundary(databaseRuntime.database),
+      ),
+    }),
+    publicPortfolioRouter: createPublicPortfolioRouter({
+      publicOrigin: environment.publicOrigin,
+      repository: createDrizzlePublicPortfolioRepository(
         createDrizzleSnapshotSessionBoundary(databaseRuntime.database),
       ),
     }),

@@ -27,19 +27,23 @@ const PROJECT_IDS = {
   missing: projectIdSchema.parse("99999999-9999-4999-8999-999999999999"),
 } as const;
 const EXPECTED_TABLES = [
+  "content_section_drafts",
   "draft_featured_state",
   "project_drafts",
   "project_operations",
   "projects",
+  "published_content_sections",
   "published_projects",
   "published_slugs",
   "published_state",
 ] as const;
 const EXPECTED_INDEXES = [
+  "content_section_drafts_pkey",
   "draft_featured_state_pkey",
   "project_drafts_pkey",
   "project_operations_pkey",
   "projects_pkey",
+  "published_content_sections_pkey",
   "published_projects_category_group_order_unique",
   "published_projects_pkey",
   "published_slugs_one_current_per_project",
@@ -61,7 +65,7 @@ type SingletonRow = {
   singletonId: number;
 };
 
-describe("initial migration and published Project reads on PostgreSQL", () => {
+describe("current migrations and published Project reads on PostgreSQL", () => {
   let harness: PostgresqlTestHarness;
 
   beforeAll(async () => {
@@ -126,9 +130,9 @@ describe("initial migration and published Project reads on PostgreSQL", () => {
     expect(tables.rows.map(({ name }) => name)).toEqual(EXPECTED_TABLES);
     expect(publicTables.rows).toEqual([]);
     expect(constraints.rows).toEqual([
-      { count: 35, type: "CHECK" },
+      { count: 38, type: "CHECK" },
       { count: 11, type: "FOREIGN KEY" },
-      { count: 7, type: "PRIMARY KEY" },
+      { count: 9, type: "PRIMARY KEY" },
       { count: 1, type: "UNIQUE" },
     ]);
     expect(indexes.rows.map(({ name }) => name)).toEqual(EXPECTED_INDEXES);
@@ -143,13 +147,13 @@ describe("initial migration and published Project reads on PostgreSQL", () => {
     ).rejects.toMatchObject({ code: "23514" });
   });
 
-  it("reads unavailable state and real published rows through one Drizzle schema", async () => {
+  it("reads never-published state and real published rows through one Drizzle schema", async () => {
     const repository = createDrizzlePublishedProjectReadRepository(
       createDrizzleSnapshotSessionBoundary(harness.database),
     );
 
     await expect(repository.readGroups()).resolves.toEqual({
-      status: "unavailable",
+      status: "never-published",
     });
 
     await harness.database.insert(projects).values(
