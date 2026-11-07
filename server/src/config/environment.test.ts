@@ -45,6 +45,22 @@ describe("validateEnvironment", () => {
     });
   });
 
+  it.each([
+    "postgresql://portfolio_owner:strong-neon-test-password@ep-example.us-east-2.aws.neon.tech/neondb?sslmode=require",
+    "postgresql://portfolio_owner:strong-neon-test-password@ep-example-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
+    "postgres://portfolio_owner:strong-neon-test-password@ep-example.eu-central-1.aws.neon.tech/neondb?sslmode=verify-full",
+    "postgresql://portfolio_owner:short@ep-example.us-east-2.aws.neon.tech/neondb?sslmode=require",
+  ])("accepts a secure Neon PostgreSQL URL", (databaseUrl) => {
+    const result = validateEnvironment(
+      createEnvironmentFixture({ DATABASE_URL: databaseUrl }),
+    );
+
+    expect(result).toMatchObject({
+      success: true,
+      data: { databaseUrl },
+    });
+  });
+
   it("fails closed when protected feature configuration is missing", () => {
     expect(validateEnvironment({})).toEqual({
       success: false,
@@ -72,6 +88,38 @@ describe("validateEnvironment", () => {
 
     expect(result).toEqual({ success: false, invalidFields: [field] });
     expect(JSON.stringify(result)).not.toContain(value);
+  });
+
+  it.each([
+    "postgresql://portfolio_owner:strong-neon-test-password@ep-example.us-east-2.aws.neon.tech/neondb",
+    "postgresql://portfolio_owner:strong-neon-test-password@ep-example.us-east-2.aws.neon.tech/neondb?sslmode=disable",
+    "postgresql://portfolio_owner:strong-neon-test-password@ep-example.us-east-2.aws.neon.tech/neondb?sslmode=require&application_name=unexpected",
+    "postgresql://portfolio_owner:strong-neon-test-password@ep-example.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=disable",
+  ])("rejects an insecure or unsupported Neon URL", (databaseUrl) => {
+    const result = validateEnvironment(
+      createEnvironmentFixture({ DATABASE_URL: databaseUrl }),
+    );
+
+    expect(result).toEqual({
+      success: false,
+      invalidFields: ["DATABASE_URL"],
+    });
+    expect(JSON.stringify(result)).not.toContain(databaseUrl);
+  });
+
+  it.each([
+    "postgresql://portfolio_owner:@ep-example.us-east-2.aws.neon.tech/neondb?sslmode=require",
+    "postgresql://portfolio_cms_dev:short@127.0.0.1:5432/portfolio_cms_dev",
+  ])("rejects a missing or unsafe database password", (databaseUrl) => {
+    const result = validateEnvironment(
+      createEnvironmentFixture({ DATABASE_URL: databaseUrl }),
+    );
+
+    expect(result).toEqual({
+      success: false,
+      invalidFields: ["DATABASE_URL"],
+    });
+    expect(JSON.stringify(result)).not.toContain(databaseUrl);
   });
 
   it.each(["localhost", "0.0.0.0", "::1", ""])(

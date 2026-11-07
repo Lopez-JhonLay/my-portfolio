@@ -693,8 +693,8 @@
           "onDelete": "restrict",
           "onUpdate": "restrict"
         },
-        "published_state_slot_1_project_id_published_projects_project_id_fk": {
-          "name": "published_state_slot_1_project_id_published_projects_project_id_fk",
+        "published_state_featured_slot_1_project_fk": {
+          "name": "published_state_featured_slot_1_project_fk",
           "tableFrom": "published_state",
           "tableTo": "published_projects",
           "columnsFrom": [
@@ -706,8 +706,8 @@
           "onDelete": "restrict",
           "onUpdate": "restrict"
         },
-        "published_state_slot_2_project_id_published_projects_project_id_fk": {
-          "name": "published_state_slot_2_project_id_published_projects_project_id_fk",
+        "published_state_featured_slot_2_project_fk": {
+          "name": "published_state_featured_slot_2_project_fk",
           "tableFrom": "published_state",
           "tableTo": "published_projects",
           "columnsFrom": [
@@ -719,8 +719,8 @@
           "onDelete": "restrict",
           "onUpdate": "restrict"
         },
-        "published_state_slot_3_project_id_published_projects_project_id_fk": {
-          "name": "published_state_slot_3_project_id_published_projects_project_id_fk",
+        "published_state_featured_slot_3_project_fk": {
+          "name": "published_state_featured_slot_3_project_fk",
           "tableFrom": "published_state",
           "tableTo": "published_projects",
           "columnsFrom": [

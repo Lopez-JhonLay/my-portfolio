@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   bigint,
   check,
+  foreignKey,
   integer,
   pgEnum,
   pgTable,
@@ -283,32 +284,35 @@ export const publishedState = pgTable(
         onDelete: "restrict",
         onUpdate: "restrict",
       }),
-    slot1ProjectId: uuid("slot_1_project_id")
-      .$type<ProjectId>()
-      .notNull()
-      .references(() => publishedProjects.projectId, {
-        onDelete: "restrict",
-        onUpdate: "restrict",
-      }),
-    slot2ProjectId: uuid("slot_2_project_id")
-      .$type<ProjectId>()
-      .notNull()
-      .references(() => publishedProjects.projectId, {
-        onDelete: "restrict",
-        onUpdate: "restrict",
-      }),
-    slot3ProjectId: uuid("slot_3_project_id")
-      .$type<ProjectId>()
-      .notNull()
-      .references(() => publishedProjects.projectId, {
-        onDelete: "restrict",
-        onUpdate: "restrict",
-      }),
+    slot1ProjectId: uuid("slot_1_project_id").$type<ProjectId>().notNull(),
+    slot2ProjectId: uuid("slot_2_project_id").$type<ProjectId>().notNull(),
+    slot3ProjectId: uuid("slot_3_project_id").$type<ProjectId>().notNull(),
     publishedAt: timestamp("published_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
   (table) => [
+    foreignKey({
+      name: "published_state_featured_slot_1_project_fk",
+      columns: [table.slot1ProjectId],
+      foreignColumns: [publishedProjects.projectId],
+    })
+      .onDelete("restrict")
+      .onUpdate("restrict"),
+    foreignKey({
+      name: "published_state_featured_slot_2_project_fk",
+      columns: [table.slot2ProjectId],
+      foreignColumns: [publishedProjects.projectId],
+    })
+      .onDelete("restrict")
+      .onUpdate("restrict"),
+    foreignKey({
+      name: "published_state_featured_slot_3_project_fk",
+      columns: [table.slot3ProjectId],
+      foreignColumns: [publishedProjects.projectId],
+    })
+      .onDelete("restrict")
+      .onUpdate("restrict"),
     check("published_state_singleton", sql`${table.singletonId} = 1`),
     check(
       "published_state_snapshot_revision_positive",

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const LOOPBACK_HOST = "127.0.0.1";
+const NEON_HOST_SUFFIX = ".neon.tech";
 const DEFAULT_PORT = 3000;
 const MAX_PORT = 65_535;
 const SESSION_TTL_MS = 8 * 60 * 60 * 1_000;
@@ -26,18 +27,47 @@ function isLocalUrl(value: string, expectedPath?: string): boolean {
   );
 }
 
-function isLocalDatabaseUrl(value: string): boolean {
+function hasSingleValue(url: URL, name: string, value: string): boolean {
+  const values = url.searchParams.getAll(name);
+  return values.length === 1 && values[0] === value;
+}
+
+function isDatabaseUrl(value: string): boolean {
   if (!URL.canParse(value)) return false;
   const url = new URL(value);
 
-  return (
+  const hasRequiredParts =
     (url.protocol === "postgres:" || url.protocol === "postgresql:") &&
-    url.hostname === LOOPBACK_HOST &&
     url.username.length > 0 &&
-    url.password.length >= 20 &&
+    url.password.length > 0 &&
     url.pathname.length > 1 &&
-    url.search.length === 0 &&
-    url.hash.length === 0
+    url.hash.length === 0;
+
+  if (!hasRequiredParts) return false;
+
+  if (url.hostname === LOOPBACK_HOST) {
+    return url.password.length >= 20 && url.search.length === 0;
+  }
+  if (!url.hostname.endsWith(NEON_HOST_SUFFIX)) return false;
+
+  const allowedParameters = new Set(["channel_binding", "sslmode"]);
+  if (
+    Array.from(url.searchParams.keys()).some(
+      (name) => !allowedParameters.has(name),
+    )
+  ) {
+    return false;
+  }
+
+  const secureSslMode = ["require", "verify-ca", "verify-full"].some((mode) =>
+    hasSingleValue(url, "sslmode", mode),
+  );
+  const channelBindingValues = url.searchParams.getAll("channel_binding");
+
+  return (
+    secureSslMode &&
+    (channelBindingValues.length === 0 ||
+      hasSingleValue(url, "channel_binding", "require"))
   );
 }
 
@@ -46,7 +76,7 @@ const environmentSchema = z
     ADMIN_ORIGIN: z
       .string()
       .refine((value) => isLocalUrl(value) && new URL(value).pathname === "/"),
-    DATABASE_URL: z.string().refine(isLocalDatabaseUrl),
+    DATABASE_URL: z.string().refine(isDatabaseUrl),
     GITHUB_ADMIN_USER_ID: z.string().regex(/^[1-9]\d*$/),
     GITHUB_CALLBACK_URL: z
       .string()

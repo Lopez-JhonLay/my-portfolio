@@ -16,6 +16,7 @@ Proceed next with published Project detail reads, safe prior-slug redirects, and
 - [x] Implement atomic Publish Updates, durable/idempotent publication operations, readiness checks, and Admin publication recovery (`CMS-DEC-PROJ-001`, `CMS-DEC-PROJ-033–046`).
 - [x] Preserve the existing public portfolio presentation boundary and legacy Project mapping on the Admin redesign baseline at `be90869`.
 - [x] Complete Stage 4 public integration for status, grouped and featured reads, first-publication fallback, loading/error/Retry states, CORS, caching, and draft isolation. Verification: 138 automated tests and all six manual browser checks passed.
+- [x] Complete Neon connectivity and the initial schema milestone. End-to-end smoke verification passed for GitHub login, persisted Project drafts, Featured selection, Publish Updates, and local public portfolio reads; the link-readiness requirement was also confirmed.
 
 ## In progress
 
