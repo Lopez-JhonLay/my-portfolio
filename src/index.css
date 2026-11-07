@@ -901,6 +901,28 @@
     margin-top: 32px;
   }
 
+  .project-load-state {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    justify-items: center;
+    gap: 20px;
+    min-height: 180px;
+    padding: 36px;
+    place-content: center;
+    text-align: center;
+    color: var(--noir-ink-dim);
+  }
+
+  .all-projects-page > .noir-section > .project-load-state {
+    margin-top: 56px;
+    border: 1px dashed var(--noir-hair);
+  }
+
+  .project-load-state p {
+    margin: 0;
+  }
+
   .back-projects-link {
     margin-top: 0;
   }

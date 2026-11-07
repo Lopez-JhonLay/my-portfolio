@@ -47,7 +47,7 @@ export type PublishedProjectReadQueries = {
 
 export type PublishedReadResult<Value> =
   | { readonly status: "available"; readonly data: Value }
-  | { readonly status: "unavailable" };
+  | { readonly status: "never-published" };
 
 export type PublishedSlugReadResult =
   | PublishedReadResult<PublicProjectDetailDto>
@@ -55,6 +55,9 @@ export type PublishedSlugReadResult =
   | { readonly status: "redirect"; readonly slug: string };
 
 export type PublishedProjectReadRepository = {
+  readStatus(): Promise<
+    { readonly status: "never-published" } | { readonly status: "published" }
+  >;
   readGroups(): Promise<PublishedReadResult<PublicProjectGroupsDto>>;
   readFeatured(): Promise<PublishedReadResult<PublicFeaturedProjectsDto>>;
   readBySlug(slug: string): Promise<PublishedSlugReadResult>;
@@ -67,7 +70,7 @@ export class PublishedSnapshotConsistencyError extends Error {
   }
 }
 
-const UNAVAILABLE = { status: "unavailable" } as const;
+const NEVER_PUBLISHED = { status: "never-published" } as const;
 const currentPublishedSlugs = alias(publishedSlugs, "current_published_slugs");
 const matchedPublishedSlugs = alias(publishedSlugs, "matched_published_slugs");
 const publishedProjectSelection = {
@@ -207,12 +210,19 @@ export function createPublishedProjectReadRepository<Session>(
   createQueries: (session: Session) => PublishedProjectReadQueries,
 ): PublishedProjectReadRepository {
   return {
+    readStatus: () =>
+      sessions.withSnapshot(async (session) => ({
+        status:
+          (await createQueries(session).readPublishedState()) === null
+            ? "never-published"
+            : "published",
+      })),
     readGroups: () =>
       sessions.withSnapshot(async (session) => {
         const queries = createQueries(session);
         const state = await queries.readPublishedState();
 
-        if (state === null) return UNAVAILABLE;
+        if (state === null) return NEVER_PUBLISHED;
 
         return {
           status: "available",
@@ -228,7 +238,7 @@ export function createPublishedProjectReadRepository<Session>(
         const queries = createQueries(session);
         const state = await queries.readPublishedState();
 
-        if (state === null) return UNAVAILABLE;
+        if (state === null) return NEVER_PUBLISHED;
 
         const projects = await queries.readPublishedProjectsByIds(
           state.featuredProjectIds,
@@ -260,7 +270,7 @@ export function createPublishedProjectReadRepository<Session>(
         const queries = createQueries(session);
         const state = await queries.readPublishedState();
 
-        if (state === null) return UNAVAILABLE;
+        if (state === null) return NEVER_PUBLISHED;
 
         const slugRecord = await queries.readPublishedSlug(slug);
 

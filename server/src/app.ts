@@ -16,6 +16,7 @@ export type AppOptions = {
   readonly adminOrigin: string;
   readonly adminProjectRouter?: Router;
   readonly authRouter: Router;
+  readonly publicProjectRouter?: Router;
 };
 
 export function createApp(options?: AppOptions): Express {
@@ -35,6 +36,9 @@ export function createApp(options?: AppOptions): Express {
 
   app.use("/health", healthRouter);
   if (options !== undefined) {
+    if (options.publicProjectRouter !== undefined) {
+      app.use("/api/projects", options.publicProjectRouter);
+    }
     const originMiddleware = createAdminOriginMiddleware(options.adminOrigin);
     app.use("/api/auth", originMiddleware, options.authRouter);
     if (options.adminProjectRouter !== undefined) {

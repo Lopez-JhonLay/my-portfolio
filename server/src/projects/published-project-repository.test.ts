@@ -140,17 +140,36 @@ describe("published Project read repository", () => {
     expect(transaction).toHaveBeenCalledOnce();
   });
 
-  it("returns the approved unavailable result when no published state exists", async () => {
+  it("distinguishes a never-published database from a published snapshot", async () => {
     const repository = createUnavailableRepository();
 
+    await expect(repository.readStatus()).resolves.toEqual({
+      status: "never-published",
+    });
     await expect(repository.readGroups()).resolves.toEqual({
-      status: "unavailable",
+      status: "never-published",
     });
     await expect(repository.readFeatured()).resolves.toEqual({
-      status: "unavailable",
+      status: "never-published",
     });
     await expect(repository.readBySlug("project-one")).resolves.toEqual({
-      status: "unavailable",
+      status: "never-published",
+    });
+  });
+
+  it("reports published only when the authoritative state row exists", async () => {
+    const context = createFakeRepository({
+      state: {
+        featuredProjectIds: [
+          projectIdSchema.parse("one"),
+          projectIdSchema.parse("two"),
+          projectIdSchema.parse("three"),
+        ],
+      },
+    });
+
+    await expect(context.repository.readStatus()).resolves.toEqual({
+      status: "published",
     });
   });
 

@@ -13,6 +13,8 @@ import { createAdminProjectRouter } from "./projects/admin-project-router.ts";
 import { createDrizzleProjectDraftReadRepository } from "./projects/project-draft-read-repository.ts";
 import { createDrizzleProjectMutationService } from "./projects/project-mutation-repository.ts";
 import { createDrizzleProjectPublicationService } from "./projects/project-publication-repository.ts";
+import { createPublicProjectRouter } from "./projects/public-project-router.ts";
+import { createDrizzlePublishedProjectReadRepository } from "./projects/published-project-repository.ts";
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
@@ -56,6 +58,12 @@ function startServer(environment: ServerEnvironment): void {
   const app = createApp({
     adminOrigin: environment.adminOrigin,
     authRouter: auth.router,
+    publicProjectRouter: createPublicProjectRouter({
+      publicOrigin: environment.publicOrigin,
+      repository: createDrizzlePublishedProjectReadRepository(
+        createDrizzleSnapshotSessionBoundary(databaseRuntime.database),
+      ),
+    }),
     adminProjectRouter: createAdminProjectRouter({
       mutationService: createDrizzleProjectMutationService(
         createDrizzleTransactionSessionBoundary(databaseRuntime.database),

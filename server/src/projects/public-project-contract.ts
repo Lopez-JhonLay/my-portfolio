@@ -72,9 +72,15 @@ export const publicFeaturedProjectsSchema = z
   .strictObject({ projects: featuredProjectsSchema })
   .readonly();
 
+/** Public source-authority state without publication operation metadata. */
+export const publicProjectStatusSchema = z
+  .strictObject({ status: z.enum(["never-published", "published"]) })
+  .readonly();
+
 export type PublicProjectCardDto = z.output<typeof publicProjectCardSchema>;
 export type PublicProjectDetailDto = z.output<typeof publicProjectDetailSchema>;
 export type PublicProjectGroupsDto = z.output<typeof publicProjectGroupsSchema>;
+export type PublicProjectStatusDto = z.output<typeof publicProjectStatusSchema>;
 export type PublicFeaturedProjectsDto = z.output<
   typeof publicFeaturedProjectsSchema
 >;

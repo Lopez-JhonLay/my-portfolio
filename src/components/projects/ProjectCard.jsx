@@ -47,5 +47,6 @@ ProjectCard.propTypes = {
     tech: PropTypes.arrayOf(PropTypes.string).isRequired,
     repo: PropTypes.string,
     liveUrl: PropTypes.string,
+    slug: PropTypes.string,
   }).isRequired,
 };

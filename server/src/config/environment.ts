@@ -58,6 +58,9 @@ const environmentSchema = z
       .optional()
       .transform((host) => host ?? LOOPBACK_HOST),
     PORT: portSchema.optional().transform((port) => port ?? DEFAULT_PORT),
+    PUBLIC_ORIGIN: z
+      .string()
+      .refine((value) => isLocalUrl(value) && new URL(value).pathname === "/"),
   })
   .transform(
     ({
@@ -69,6 +72,7 @@ const environmentSchema = z
       GITHUB_CLIENT_SECRET,
       HOST,
       PORT,
+      PUBLIC_ORIGIN,
     }) => ({
       adminOrigin: ADMIN_ORIGIN,
       adminUserId: GITHUB_ADMIN_USER_ID,
@@ -78,6 +82,7 @@ const environmentSchema = z
       githubClientSecret: GITHUB_CLIENT_SECRET,
       host: HOST,
       port: PORT,
+      publicOrigin: PUBLIC_ORIGIN,
       sessionTtlMs: SESSION_TTL_MS,
     }),
   )
@@ -91,7 +96,8 @@ type EnvironmentField =
   | "GITHUB_CLIENT_ID"
   | "GITHUB_CLIENT_SECRET"
   | "HOST"
-  | "PORT";
+  | "PORT"
+  | "PUBLIC_ORIGIN";
 
 const ENVIRONMENT_FIELDS = new Set<EnvironmentField>([
   "ADMIN_ORIGIN",
@@ -102,6 +108,7 @@ const ENVIRONMENT_FIELDS = new Set<EnvironmentField>([
   "GITHUB_CLIENT_SECRET",
   "HOST",
   "PORT",
+  "PUBLIC_ORIGIN",
 ]);
 
 export type ServerEnvironment = z.output<typeof environmentSchema>;

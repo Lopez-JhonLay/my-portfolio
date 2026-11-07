@@ -18,6 +18,7 @@ describe("validateEnvironment", () => {
         githubClientSecret: environment.GITHUB_CLIENT_SECRET,
         host: "127.0.0.1",
         port: 3000,
+        publicOrigin: environment.PUBLIC_ORIGIN,
         sessionTtlMs: 28_800_000,
       },
     });
@@ -38,6 +39,7 @@ describe("validateEnvironment", () => {
         githubClientSecret: "test-github-client-secret-value",
         host: "127.0.0.1",
         port: Number(port),
+        publicOrigin: "http://127.0.0.1:5173",
         sessionTtlMs: 28_800_000,
       },
     });
@@ -53,6 +55,7 @@ describe("validateEnvironment", () => {
         "GITHUB_CALLBACK_URL",
         "GITHUB_CLIENT_ID",
         "GITHUB_CLIENT_SECRET",
+        "PUBLIC_ORIGIN",
       ],
     });
   });
@@ -61,6 +64,7 @@ describe("validateEnvironment", () => {
     ["ADMIN_ORIGIN", "https://admin.example.com"],
     ["DATABASE_URL", "postgresql://user:password@database.example.com/cms"],
     ["GITHUB_CALLBACK_URL", "https://api.example.com/api/auth/github/callback"],
+    ["PUBLIC_ORIGIN", "https://portfolio.example.com"],
   ] as const)("rejects non-local %s", (field, value) => {
     const result = validateEnvironment(
       createEnvironmentFixture({ [field]: value }),
