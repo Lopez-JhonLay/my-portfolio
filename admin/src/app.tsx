@@ -197,7 +197,11 @@ export function App() {
 
   return (
     <>
-      <AdminShell isBusy={isLoggingOut} onLogout={requestLogout}>
+      <AdminShell
+        isBusy={isLoggingOut}
+        onLogout={requestLogout}
+        profile={session.profile}
+      >
         {isTextContentView(view) ? (
           <ContentEditorPage
             apiOrigin={origin}

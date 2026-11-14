@@ -49,6 +49,7 @@ export function useProjectPublication(options: {
   const [pendingOperationId, setPendingOperationId] = useState<string | null>(
     null,
   );
+  const [publishedCount, setPublishedCount] = useState(0);
   const startupStarted = useRef(false);
 
   const handleReadError = useCallback(
@@ -60,7 +61,7 @@ export function useProjectPublication(options: {
       setNotice({
         kind: "warning",
         message:
-          "Publication status could not be read. The publish operation was not retried.",
+          "Couldn't check the publishing status. Nothing was sent again — try checking in a moment.",
       });
     },
     [onUnauthorized],
@@ -72,15 +73,17 @@ export function useProjectPublication(options: {
       clearOperation();
       setPendingOperationId(null);
       if (operation.status === "succeeded") {
+        setPublishedCount((count) => count + 1);
         setNotice({
           kind: "success",
-          message: `Published snapshot ${operation.snapshotRevision}.`,
+          message:
+            "Published. Your live portfolio now shows your latest saved changes.",
         });
       } else {
         setNotice({
           kind: "error",
           message:
-            "Publish Updates is not ready. Save valid drafts and select exactly three distinct eligible featured Projects.",
+            "Couldn't publish. Make sure all your changes are saved and 3 projects are picked as featured.",
         });
       }
       return true;
@@ -95,7 +98,7 @@ export function useProjectPublication(options: {
       setNotice({
         kind: "info",
         message:
-          "Publish outcome unknown. Checking status without retrying publication…",
+          "Publishing is taking longer than usual. Checking whether it finished…",
       });
       for (let attempt = 0; attempt < POLL_ATTEMPTS; attempt += 1) {
         await delay(POLL_INTERVAL_MS);
@@ -113,7 +116,7 @@ export function useProjectPublication(options: {
       setNotice({
         kind: "warning",
         message:
-          "Publish outcome remains unknown. Nothing was republished. Reload later or check status again.",
+          "We couldn't confirm whether publishing finished. Nothing was sent twice — check the status again in a moment.",
       });
     },
     [client, onUnauthorized, resolveOperation],
@@ -130,7 +133,7 @@ export function useProjectPublication(options: {
         setNotice({
           kind: "warning",
           message:
-            "A previous publication is still unresolved. It was checked once and was not retried.",
+            "Your last publish hasn't been confirmed yet. Check its status before publishing again.",
         });
       }
     }, handleReadError);
@@ -142,7 +145,7 @@ export function useProjectPublication(options: {
     storeOperation(operationId);
     setPendingOperationId(operationId);
     setIsPublishing(true);
-    setNotice({ kind: "info", message: "Publishing saved updates…" });
+    setNotice({ kind: "info", message: "Publishing your saved changes…" });
     try {
       const operation = await client.publish(operationId, csrfToken);
       if (!resolveOperation(operation)) await pollOperation(operationId);
@@ -164,7 +167,7 @@ export function useProjectPublication(options: {
           setNotice({
             kind: "error",
             message:
-              "Publish Updates is not ready. Save valid drafts and select exactly three distinct eligible featured Projects.",
+              "Couldn't publish. Make sure all your changes are saved and 3 projects are picked as featured.",
           });
         } else {
           setNotice({
@@ -172,7 +175,7 @@ export function useProjectPublication(options: {
             message:
               error instanceof AdminApiError
                 ? error.message
-                : "The Admin API returned an unexpected response.",
+                : "Something went wrong while publishing. Please try again.",
           });
         }
       }
@@ -184,14 +187,13 @@ export function useProjectPublication(options: {
   async function checkUnresolved() {
     if (pendingOperationId === null || isPublishing) return;
     setIsPublishing(true);
-    setNotice({ kind: "info", message: "Checking publication status…" });
+    setNotice({ kind: "info", message: "Checking publishing status…" });
     try {
       const operation = await client.readPublication(pendingOperationId);
       if (!resolveOperation(operation)) {
         setNotice({
           kind: "warning",
-          message:
-            "Publication is still pending. It was checked without retrying the mutation.",
+          message: "Still publishing. Check again in a moment.",
         });
       }
     } catch (error) {
@@ -207,5 +209,7 @@ export function useProjectPublication(options: {
     notice,
     pendingOperationId,
     publish,
+    /** Increments after each confirmed publish so dependents can refresh. */
+    publishedCount,
   };
 }

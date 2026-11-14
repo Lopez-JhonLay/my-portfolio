@@ -1,5 +1,13 @@
-import { CheckCircle2, Send, TriangleAlert } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Clock3,
+  LoaderCircle,
+  Send,
+  TriangleAlert,
+} from "lucide-react";
 import { useMemo } from "react";
+import { Link } from "react-router-dom";
 
 import {
   AlertDialog,
@@ -11,12 +19,15 @@ import {
   AlertDialogTrigger,
 } from "../../components/ui/alert-dialog";
 import { Button } from "../../components/ui/button";
+import type { ContentSectionKey } from "../content/content-contract";
+import type { OverviewReadiness } from "../overview/overview-model";
 import { OperationAlert } from "../shell/operation-alert";
 import type { AdminProject, FeaturedDraft } from "./project-contract";
 import { getPublicationReadiness } from "./publication-readiness";
 import type { SaveNotice } from "./use-project-workspace";
 
 type PublishUpdatesPageProps = {
+  readonly contentReadiness: OverviewReadiness;
   readonly featuredDirty: boolean;
   readonly featuredPending: boolean;
   readonly isLoading: boolean;
@@ -37,7 +48,25 @@ const categoryLabels = {
   "Capstone Project": "Capstone",
 } as const;
 
+const sectionDetails: Record<
+  ContentSectionKey,
+  { readonly label: string; readonly to?: string }
+> = {
+  hero: { label: "Hero", to: "/hero" },
+  about: { label: "About Me", to: "/about" },
+  "projects-presentation": { label: "Projects section" },
+  timeline: { label: "Timeline", to: "/timeline" },
+  technologies: { label: "Technologies", to: "/technologies" },
+  contact: { label: "Contact", to: "/contact" },
+  "media-resume": { label: "Resume PDF", to: "/hero" },
+};
+
+function pluralize(count: number, singular: string, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
 export function PublishUpdatesPage({
+  contentReadiness,
   featuredDirty,
   featuredPending,
   isLoading,
@@ -75,179 +104,258 @@ export function PublishUpdatesPage({
     ],
   );
   const projectById = new Map(projects.map((project) => [project.id, project]));
-  const includedProjects = projects.filter(
-    (project) =>
-      project.lifecycle === "active" && project.publicationIntent === "include",
+  const activeProjects = projects.filter(
+    (project) => project.lifecycle === "active",
   );
-  const excludedProjects = projects.filter(
-    (project) =>
-      project.lifecycle === "trashed" ||
-      project.publicationIntent === "exclude",
+  const shownProjects = activeProjects.filter(
+    (project) => project.publicationIntent === "include",
+  );
+  const hiddenCount = activeProjects.length - shownProjects.length;
+  const trashedCount = projects.length - activeProjects.length;
+  const sectionCount =
+    contentReadiness.status === "ready"
+      ? contentReadiness.sections.length
+      : null;
+
+  const status = isPublishing
+    ? "publishing"
+    : publicationPending
+      ? "unconfirmed"
+      : isLoading
+        ? "loading"
+        : readiness.ready
+          ? "ready"
+          : "blocked";
+  // While a publish is unconfirmed the card already explains it, so only
+  // list the other things that still need fixing.
+  const listedBlockers =
+    status === "blocked"
+      ? readiness.blockers
+      : status === "unconfirmed"
+        ? readiness.blockers.filter((blocker) => blocker.fix !== undefined)
+        : [];
+
+  const publishButton = (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button disabled={status !== "ready"} size="lg" type="button">
+          <Send aria-hidden="true" />
+          Publish updates
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <div className="dialog-heading">
+          <div className="dialog-icon dialog-icon--neutral" aria-hidden="true">
+            <Send size={18} />
+          </div>
+          <AlertDialogTitle>Publish to your live site?</AlertDialogTitle>
+        </div>
+        <AlertDialogDescription>
+          Visitors will see your saved changes right away. Edits you
+          haven&apos;t saved won&apos;t be included.
+        </AlertDialogDescription>
+        <div className="publish-dialog-scope">
+          <span>{pluralize(shownProjects.length, "project")}</span>
+          <span>3 featured</span>
+          {sectionCount !== null && (
+            <span>{pluralize(sectionCount, "page section")}</span>
+          )}
+        </div>
+        <div className="dialog-actions">
+          <AlertDialogCancel asChild>
+            <Button type="button" variant="outline">
+              Cancel
+            </Button>
+          </AlertDialogCancel>
+          <AlertDialogAction asChild>
+            <Button onClick={onPublish} type="button">
+              Publish now
+            </Button>
+          </AlertDialogAction>
+        </div>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 
   return (
     <section className="publish-workspace" aria-labelledby="publish-title">
       <header className="publish-page-header">
-        <div>
-          <h1 id="publish-title">Publish Updates</h1>
-          <p>
-            Review saved publication inputs, then publish one atomic public
-            snapshot. Unsaved changes are never included.
-          </p>
-        </div>
+        <h1 id="publish-title">Publish updates</h1>
+        <p>
+          Make your saved changes live on your portfolio. Anything you
+          haven&apos;t saved stays private.
+        </p>
       </header>
 
-      {notice && <OperationAlert kind={notice.kind} message={notice.message} />}
-      {publicationPending && !isPublishing && (
-        <Button onClick={onCheckStatus} type="button" variant="outline">
-          Check publication status
-        </Button>
-      )}
+      <section
+        aria-labelledby="publish-status-title"
+        className={`publish-status is-${status}`}
+      >
+        <div className="publish-status-icon" aria-hidden="true">
+          {status === "ready" ? (
+            <CheckCircle2 size={20} />
+          ) : status === "blocked" ? (
+            <TriangleAlert size={20} />
+          ) : status === "unconfirmed" ? (
+            <Clock3 size={20} />
+          ) : (
+            <LoaderCircle className="publish-spin" size={20} />
+          )}
+        </div>
+        <div className="publish-status-body">
+          <h2 id="publish-status-title">
+            {status === "ready"
+              ? "Ready to publish"
+              : status === "blocked"
+                ? `${pluralize(readiness.blockers.length, "thing")} to fix before publishing`
+                : status === "unconfirmed"
+                  ? "Waiting to confirm your last publish"
+                  : status === "publishing"
+                    ? "Publishing…"
+                    : "Checking your changes…"}
+          </h2>
+          <p>
+            {status === "ready"
+              ? "Everything is saved. Your live site will update all at once."
+              : status === "blocked"
+                ? "Your live site stays as it is until these are sorted out."
+                : status === "unconfirmed"
+                  ? "Check its status before publishing again so nothing goes out twice."
+                  : status === "publishing"
+                    ? "Sending your saved changes to your live site."
+                    : "This only takes a moment."}
+          </p>
+          {listedBlockers.length > 0 && (
+            <ul className="publish-fix-list">
+              {listedBlockers.map((blocker) => (
+                <li key={blocker.message}>
+                  <span>{blocker.message}</span>
+                  {blocker.fix && (
+                    <Link to={blocker.fix.to}>
+                      {blocker.fix.label}
+                      <ArrowRight aria-hidden="true" size={14} />
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="publish-status-action">
+          {status === "unconfirmed" ? (
+            <Button onClick={onCheckStatus} size="lg" type="button">
+              Check status
+            </Button>
+          ) : (
+            publishButton
+          )}
+        </div>
+      </section>
 
-      <div className="publish-review">
-        <section aria-labelledby="readiness-title">
-          <div className="publish-section-heading">
-            {readiness.ready ? (
-              <CheckCircle2 aria-hidden="true" />
-            ) : (
-              <TriangleAlert aria-hidden="true" />
-            )}
+      {notice && <OperationAlert kind={notice.kind} message={notice.message} />}
+
+      <h2 className="publish-group-title">What goes live</h2>
+      <div className="publish-groups">
+        <section className="publish-group" aria-labelledby="publish-projects">
+          <header>
             <div>
-              <h2 id="readiness-title">Publication readiness</h2>
+              <h3 id="publish-projects">Projects</h3>
               <p>
-                {readiness.ready
-                  ? "No known local blockers. The backend performs the authoritative readiness check."
-                  : `${readiness.blockers.length} known ${readiness.blockers.length === 1 ? "blocker" : "blockers"} must be resolved.`}
+                {isLoading
+                  ? "Loading…"
+                  : [
+                      `${shownProjects.length} shown on your site`,
+                      hiddenCount > 0 && `${hiddenCount} hidden`,
+                      trashedCount > 0 && `${trashedCount} in trash`,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
               </p>
             </div>
-          </div>
-          {readiness.blockers.length > 0 && (
-            <ul className="publish-blockers">
-              {readiness.blockers.map((blocker) => (
-                <li key={blocker}>{blocker}</li>
+            <Link className="publish-group-link" to="/projects">
+              Manage
+            </Link>
+          </header>
+          {!isLoading && shownProjects.length > 0 && (
+            <ul className="publish-chip-list">
+              {shownProjects.map((project) => (
+                <li key={project.id}>{project.draft.name}</li>
               ))}
             </ul>
           )}
         </section>
 
-        <section aria-labelledby="candidate-title">
-          <div className="publish-section-heading">
+        <section className="publish-group" aria-labelledby="publish-featured">
+          <header>
             <div>
-              <h2 id="candidate-title">Saved Project candidates</h2>
-              <p>
-                Contract-supported intent only; this is not a change diff or
-                authoritative per-row public status.
-              </p>
+              <h3 id="publish-featured">Featured on your homepage</h3>
+              <p>Shown in this order.</p>
             </div>
-          </div>
-          <dl className="publish-summary-list">
-            <div>
-              <dt>Active and marked for inclusion</dt>
-              <dd>{includedProjects.length}</dd>
-            </div>
-            <div>
-              <dt>Excluded or trashed</dt>
-              <dd>{excludedProjects.length}</dd>
-            </div>
-          </dl>
-        </section>
-
-        <section aria-labelledby="featured-review-title">
-          <div className="publish-section-heading">
-            <div>
-              <h2 id="featured-review-title">Saved Featured order</h2>
-              <p>The three saved homepage slots included in publication.</p>
-            </div>
-          </div>
-          <ol className="publish-featured-list">
+            <Link className="publish-group-link" to="/featured">
+              Edit
+            </Link>
+          </header>
+          <ol className="publish-rows">
             {savedFeaturedSlots.map((projectId, index) => {
               const project =
                 projectId === null ? undefined : projectById.get(projectId);
               return (
                 <li key={index}>
-                  <span>{index + 1}</span>
-                  <div>
-                    <strong>{project?.draft.name ?? "Not selected"}</strong>
-                    <small>
-                      {project === undefined
-                        ? "Missing saved selection"
-                        : categoryLabels[project.draft.category]}
-                    </small>
-                  </div>
+                  <span className="publish-slot-number">{index + 1}</span>
+                  <span className="publish-row-name">
+                    {project?.draft.name ?? (
+                      <span className="publish-row-missing">Empty slot</span>
+                    )}
+                  </span>
+                  {project && (
+                    <span className="publish-row-meta">
+                      {categoryLabels[project.draft.category]}
+                    </span>
+                  )}
                 </li>
               );
             })}
           </ol>
         </section>
 
-        <section aria-labelledby="content-review-title">
-          <div className="publish-section-heading">
+        <section className="publish-group" aria-labelledby="publish-sections">
+          <header>
             <div>
-              <h2 id="content-review-title">Saved portfolio content</h2>
-              <p>
-                All seven saved content documents are validated by the backend
-                and included in the same atomic snapshot.
-              </p>
+              <h3 id="publish-sections">Page sections</h3>
+              <p>All sections are published together with your projects.</p>
             </div>
-          </div>
+          </header>
+          {contentReadiness.status === "ready" ? (
+            <ul className="publish-rows">
+              {contentReadiness.sections.map((section) => {
+                const details = sectionDetails[section.sectionKey];
+                return (
+                  <li key={section.sectionKey}>
+                    <span className="publish-row-name">{details.label}</span>
+                    <span
+                      className={`publish-pill${section.isPublished ? " is-live" : ""}`}
+                    >
+                      {section.isPublished ? "Live" : "Not live yet"}
+                    </span>
+                    {details.to ? (
+                      <Link className="publish-row-link" to={details.to}>
+                        Edit
+                      </Link>
+                    ) : (
+                      <span className="publish-row-link" aria-hidden="true" />
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="publish-group-note">
+              {contentReadiness.status === "loading"
+                ? "Loading section status…"
+                : "Couldn't load section status. Reload the page to try again."}
+            </p>
+          )}
         </section>
-      </div>
-
-      <div className="publish-actions">
-        <span className="form-draft-status" role="status">
-          {publicationPending
-            ? "Publication outcome unresolved"
-            : isPublishing
-              ? "Publishing saved updates…"
-              : readiness.ready
-                ? "Ready for backend readiness check"
-                : "Resolve blockers before publishing"}
-        </span>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              disabled={!readiness.ready || isPublishing || publicationPending}
-              type="button"
-            >
-              <Send aria-hidden="true" />
-              {isPublishing ? "Publishing…" : "Publish Updates"}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <div className="dialog-heading">
-              <div
-                className="dialog-icon dialog-icon--neutral"
-                aria-hidden="true"
-              >
-                <Send size={18} />
-              </div>
-              <AlertDialogTitle>Publish all saved updates?</AlertDialogTitle>
-            </div>
-            <AlertDialogDescription>
-              This creates one atomic public snapshot from every eligible saved
-              Project draft, the saved Featured order, and all saved portfolio
-              content. Unsaved edits are not included, and publication is not
-              automatically retried.
-            </AlertDialogDescription>
-            <div className="publish-dialog-scope">
-              <span>{includedProjects.length} inclusion candidates</span>
-              <span>3 saved Featured slots</span>
-              <span>7 saved content sections</span>
-            </div>
-            <div className="dialog-actions">
-              <AlertDialogCancel asChild>
-                <Button type="button" variant="outline">
-                  Cancel
-                </Button>
-              </AlertDialogCancel>
-              <AlertDialogAction asChild>
-                <Button onClick={onPublish} type="button">
-                  Publish saved updates
-                </Button>
-              </AlertDialogAction>
-            </div>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
     </section>
   );

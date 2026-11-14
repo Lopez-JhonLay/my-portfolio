@@ -7,6 +7,7 @@ import { OperationAlert } from "../shell/operation-alert";
 import { createContentClient } from "../content/content-client";
 import { useContentReadiness } from "../content/use-content-readiness";
 import { createMediaClient, type MediaAsset } from "../media/media-client";
+import { OverviewDashboard } from "../overview/overview-dashboard";
 
 import { ConflictPanel } from "./conflict-panel";
 import { createProjectClient } from "./project-client";
@@ -85,10 +86,6 @@ export function ProjectsDashboard({
   );
   const mediaClient = useMemo(() => createMediaClient(apiOrigin), [apiOrigin]);
   const [mediaAssets, setMediaAssets] = useState<readonly MediaAsset[]>([]);
-  const contentReadiness = useContentReadiness({
-    client: contentClient,
-    onUnauthorized,
-  });
   const workspace = useProjectWorkspace({
     client,
     csrfToken,
@@ -100,6 +97,11 @@ export function ProjectsDashboard({
     client,
     csrfToken,
     onUnauthorized,
+  });
+  const contentReadiness = useContentReadiness({
+    client: contentClient,
+    onUnauthorized,
+    refreshKey: publication.publishedCount,
   });
 
   const dirty = workspace.dirty || featured.dirty;
@@ -188,66 +190,20 @@ export function ProjectsDashboard({
       className={`dashboard-shell dashboard-view--${view} projects-mode--${projectRoute.kind}`}
     >
       {view === "overview" && (
-        <main className="page-content">
-          <div className="page-heading">
-            <div>
-              <h1>Overview</h1>
-              <p>
-                Review saved work and continue with the next required action.
-              </p>
-            </div>
-          </div>
-          <div className="overview-list" aria-label="Workspace summary">
-            <section>
-              <span>Project drafts</span>
-              <strong>{workspace.projects.length}</strong>
-              <p>
-                {workspace.isLoading
-                  ? "Loading current drafts…"
-                  : "Available in the Projects workspace."}
-              </p>
-            </section>
-            <section>
-              <span>Featured slots</span>
-              <strong>{featured.slots.filter(Boolean).length} of 3</strong>
-              <p>
-                {featured.dirty
-                  ? "Selection has unsaved changes."
-                  : "Saved selection is loaded."}
-              </p>
-            </section>
-            <section>
-              <span>Content sections</span>
-              <strong>
-                {contentReadiness.status === "ready"
-                  ? `${contentReadiness.sections.filter((section) => section.isPublished).length} of ${contentReadiness.sections.length}`
-                  : "—"}
-              </strong>
-              <p>
-                {contentReadiness.status === "loading"
-                  ? "Loading content readiness…"
-                  : contentReadiness.status === "error"
-                    ? "Content readiness could not be loaded."
-                    : "Published sections are included in the global snapshot."}
-              </p>
-            </section>
-            <section>
-              <span>Unresolved operations</span>
-              <strong>
-                {
-                  [
-                    workspace.pendingOperation,
-                    featured.pendingOperationId,
-                    publication.pendingOperationId,
-                  ].filter(Boolean).length
-                }
-              </strong>
-              <p>
-                Open the relevant workspace to review or recover an operation.
-              </p>
-            </section>
-          </div>
-        </main>
+        <OverviewDashboard
+          contentReadiness={contentReadiness}
+          featuredCount={featured.slots.filter(Boolean).length}
+          hasUnsavedChanges={dirty}
+          isWorkspaceLoading={workspace.isLoading || featured.isLoading}
+          pendingOperationCount={
+            [
+              workspace.pendingOperation,
+              featured.pendingOperationId,
+              publication.pendingOperationId,
+            ].filter(Boolean).length
+          }
+          projectCount={workspace.projects.length}
+        />
       )}
       <main className="dashboard-main">
         {(view !== "projects" || projectRoute.kind === "list") && (
@@ -303,6 +259,7 @@ export function ProjectsDashboard({
                 }
               >
                 <PublishUpdatesPage
+                  contentReadiness={contentReadiness}
                   featuredDirty={featured.dirty}
                   featuredPending={featured.pendingOperationId !== null}
                   isLoading={workspace.isLoading || featured.isLoading}

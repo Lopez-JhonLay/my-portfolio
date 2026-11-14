@@ -15,8 +15,10 @@ type ContentReadinessState =
 export function useContentReadiness(options: {
   readonly client: ContentClient;
   readonly onUnauthorized: () => void;
+  /** Changing this value reloads the section status (e.g. after publishing). */
+  readonly refreshKey?: number;
 }): ContentReadinessState {
-  const { client, onUnauthorized } = options;
+  const { client, onUnauthorized, refreshKey } = options;
   const [state, setState] = useState<ContentReadinessState>({
     status: "loading",
     sections: [],
@@ -38,7 +40,7 @@ export function useContentReadiness(options: {
       },
     );
     return () => controller.abort();
-  }, [client, onUnauthorized]);
+  }, [client, onUnauthorized, refreshKey]);
 
   return state;
 }

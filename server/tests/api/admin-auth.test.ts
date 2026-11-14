@@ -90,7 +90,9 @@ describe("GitHub OAuth client", () => {
       new Response(
         JSON.stringify({
           id: 12_345_678,
+          avatar_url: "https://avatars.githubusercontent.com/u/12345678?v=4",
           login: "synthetic-admin",
+          name: "Synthetic Admin",
           node_id: "synthetic-node-id",
         }),
         { status: 200 },
@@ -110,6 +112,11 @@ describe("GitHub OAuth client", () => {
     });
 
     await expect(client.exchangeCode("synthetic-code")).resolves.toEqual({
+      profile: {
+        avatarUrl: "https://avatars.githubusercontent.com/u/12345678?v=4",
+        login: "synthetic-admin",
+        name: "Synthetic Admin",
+      },
       userId: "12345678",
     });
   });
@@ -337,6 +344,28 @@ describe("admin authentication API", () => {
     expect(responseBody(response)).toMatchObject({
       error: { code: "INVALID_OAUTH_STATE" },
     });
+  });
+
+  it("returns the GitHub display profile for an authenticated session", async () => {
+    const { app, auth } = createTestAuth();
+    const profile = {
+      avatarUrl: "https://avatars.githubusercontent.com/u/12345678?v=4",
+      login: "synthetic-admin",
+      name: "Synthetic Admin",
+    };
+    const session = auth.sessions.create("12345678", profile);
+
+    const response = await request(app)
+      .get("/api/auth/session")
+      .set("Origin", ADMIN_ORIGIN)
+      .set("Cookie", `portfolio_cms_session=${session.sessionId}`);
+
+    expect(response.status).toBe(200);
+    expect(responseBody(response)).toMatchObject({
+      authenticated: true,
+      profile,
+    });
+    expect(responseBody(response)).not.toHaveProperty("githubUserId");
   });
 
   it("rejects unapproved origins and requires CSRF for logout", async () => {

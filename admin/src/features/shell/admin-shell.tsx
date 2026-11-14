@@ -28,11 +28,13 @@ import {
   setAdminTheme,
   type AdminTheme,
 } from "../../lib/admin-theme";
+import type { AdminProfile } from "../auth/auth-client";
 
 type AdminShellProps = {
   readonly children: ReactNode;
   readonly isBusy: boolean;
   readonly onLogout: () => void;
+  readonly profile: AdminProfile | null;
 };
 
 const navigation = [
@@ -46,6 +48,35 @@ const navigation = [
   { to: "/featured", label: "Featured Projects", icon: Star, end: true },
   { to: "/publish", label: "Publish Updates", icon: Send, end: true },
 ] as const;
+
+function SidebarProfile({ profile }: { readonly profile: AdminProfile }) {
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  const displayName = profile.name ?? profile.login;
+
+  return (
+    <div className="sidebar-profile">
+      {profile.avatarUrl && !avatarFailed ? (
+        <img
+          alt=""
+          className="sidebar-profile-avatar"
+          height={32}
+          onError={() => setAvatarFailed(true)}
+          referrerPolicy="no-referrer"
+          src={profile.avatarUrl}
+          width={32}
+        />
+      ) : (
+        <span aria-hidden="true" className="sidebar-profile-avatar">
+          {displayName.charAt(0).toUpperCase()}
+        </span>
+      )}
+      <div className="sidebar-profile-text">
+        <strong>{displayName}</strong>
+        {profile.name && <small>@{profile.login}</small>}
+      </div>
+    </div>
+  );
+}
 
 function Navigation({ onNavigate }: { readonly onNavigate?: () => void }) {
   return (
@@ -68,7 +99,12 @@ function Navigation({ onNavigate }: { readonly onNavigate?: () => void }) {
   );
 }
 
-export function AdminShell({ children, isBusy, onLogout }: AdminShellProps) {
+export function AdminShell({
+  children,
+  isBusy,
+  onLogout,
+  profile,
+}: AdminShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [theme, setTheme] = useState<AdminTheme>(() =>
     readStoredAdminTheme(window.localStorage),
@@ -98,15 +134,18 @@ export function AdminShell({ children, isBusy, onLogout }: AdminShellProps) {
           </div>
         </div>
         <Navigation />
-        <button
-          className="sidebar-logout"
-          disabled={isBusy}
-          onClick={onLogout}
-          type="button"
-        >
-          <LogOut aria-hidden="true" size={17} />
-          <span>{isBusy ? "Logging out…" : "Log out"}</span>
-        </button>
+        <div className="sidebar-footer">
+          {profile && <SidebarProfile profile={profile} />}
+          <button
+            className="sidebar-logout"
+            disabled={isBusy}
+            onClick={onLogout}
+            type="button"
+          >
+            <LogOut aria-hidden="true" size={17} />
+            <span>{isBusy ? "Logging out…" : "Log out"}</span>
+          </button>
+        </div>
       </aside>
       <div className="admin-workspace">
         <header className="workspace-header">
@@ -120,18 +159,20 @@ export function AdminShell({ children, isBusy, onLogout }: AdminShellProps) {
             <SheetContent className="mobile-sidebar">
               <SheetTitle className="sheet-title">Portfolio CMS</SheetTitle>
               <Navigation onNavigate={() => setMobileOpen(false)} />
-              <button
-                className="sidebar-logout"
-                disabled={isBusy}
-                onClick={logoutFromMobileNavigation}
-                type="button"
-              >
-                <LogOut aria-hidden="true" size={17} />
-                <span>{isBusy ? "Logging out…" : "Log out"}</span>
-              </button>
+              <div className="sidebar-footer">
+                {profile && <SidebarProfile profile={profile} />}
+                <button
+                  className="sidebar-logout"
+                  disabled={isBusy}
+                  onClick={logoutFromMobileNavigation}
+                  type="button"
+                >
+                  <LogOut aria-hidden="true" size={17} />
+                  <span>{isBusy ? "Logging out…" : "Log out"}</span>
+                </button>
+              </div>
             </SheetContent>
           </Sheet>
-          <span className="workspace-label">Admin workspace</span>
           <button
             aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
             className="icon-button theme-toggle"
