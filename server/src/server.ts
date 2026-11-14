@@ -69,6 +69,7 @@ function startServer(
       adminUserId: environment.adminUserId,
       githubCallbackUrl: environment.githubCallbackUrl,
       githubClientId: environment.githubClientId,
+      secureCookies: environment.secureCookies,
       sessionTtlMs: environment.sessionTtlMs,
     },
     githubClient: createGitHubOAuthClient({

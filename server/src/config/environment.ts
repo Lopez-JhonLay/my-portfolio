@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const LOOPBACK_HOST = "127.0.0.1";
+const RENDER_HOST = "0.0.0.0";
 const NEON_HOST_SUFFIX = ".neon.tech";
 const DEFAULT_PORT = 3000;
 const MAX_PORT = 65_535;
@@ -12,18 +13,18 @@ const portSchema = z
   .transform(Number)
   .refine((port) => port <= MAX_PORT);
 
-function isLocalUrl(value: string, expectedPath?: string): boolean {
+function isApplicationUrl(value: string, expectedPath = "/"): boolean {
   if (!URL.canParse(value)) return false;
   const url = new URL(value);
 
   return (
-    url.protocol === "http:" &&
-    url.hostname === LOOPBACK_HOST &&
+    ((url.protocol === "http:" && url.hostname === LOOPBACK_HOST) ||
+      url.protocol === "https:") &&
     url.username.length === 0 &&
     url.password.length === 0 &&
     url.search.length === 0 &&
     url.hash.length === 0 &&
-    (expectedPath === undefined || url.pathname === expectedPath)
+    url.pathname === expectedPath
   );
 }
 
@@ -73,24 +74,20 @@ function isDatabaseUrl(value: string): boolean {
 
 const environmentSchema = z
   .object({
-    ADMIN_ORIGIN: z
-      .string()
-      .refine((value) => isLocalUrl(value) && new URL(value).pathname === "/"),
+    ADMIN_ORIGIN: z.string().refine((value) => isApplicationUrl(value)),
     DATABASE_URL: z.string().refine(isDatabaseUrl),
     GITHUB_ADMIN_USER_ID: z.string().regex(/^[1-9]\d*$/),
     GITHUB_CALLBACK_URL: z
       .string()
-      .refine((value) => isLocalUrl(value, "/api/auth/github/callback")),
+      .refine((value) => isApplicationUrl(value, "/api/auth/github/callback")),
     GITHUB_CLIENT_ID: z.string().trim().min(1).max(255),
     GITHUB_CLIENT_SECRET: z.string().min(20).max(255),
     HOST: z
-      .literal(LOOPBACK_HOST)
+      .enum([LOOPBACK_HOST, RENDER_HOST])
       .optional()
       .transform((host) => host ?? LOOPBACK_HOST),
     PORT: portSchema.optional().transform((port) => port ?? DEFAULT_PORT),
-    PUBLIC_ORIGIN: z
-      .string()
-      .refine((value) => isLocalUrl(value) && new URL(value).pathname === "/"),
+    PUBLIC_ORIGIN: z.string().refine((value) => isApplicationUrl(value)),
   })
   .transform(
     ({
@@ -113,6 +110,7 @@ const environmentSchema = z
       host: HOST,
       port: PORT,
       publicOrigin: PUBLIC_ORIGIN,
+      secureCookies: new URL(GITHUB_CALLBACK_URL).protocol === "https:",
       sessionTtlMs: SESSION_TTL_MS,
     }),
   )

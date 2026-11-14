@@ -180,6 +180,43 @@ describe("admin authentication API", () => {
     });
   });
 
+  it("uses secure cross-site session cookies for HTTPS deployments", async () => {
+    const adminOrigin = "https://portfolio-admin.vercel.app";
+    const auth = createAdminAuth({
+      config: {
+        adminOrigin,
+        adminUserId: "12345678",
+        githubCallbackUrl:
+          "https://portfolio-api.onrender.com/api/auth/github/callback",
+        githubClientId: "test-github-client-id",
+        secureCookies: true,
+        sessionTtlMs: 60_000,
+      },
+      githubClient: {
+        exchangeCode: () => Promise.resolve({ userId: "12345678" }),
+      },
+    });
+    const app = createApp({ adminOrigin, authRouter: auth.router });
+    const start = await request(app).get("/api/auth/github");
+    const authorizationUrl = new URL(requiredHeader(start, "location"));
+    const callback = await request(app)
+      .get("/api/auth/github/callback")
+      .set("Cookie", cookieValue(start, "portfolio_cms_oauth_state"))
+      .query({
+        code: "github-code",
+        state: authorizationUrl.searchParams.get("state"),
+      });
+    const cookies = serializedSetCookie(callback);
+
+    expect(serializedSetCookie(start)).toMatch(
+      /SameSite=Lax; Secure; Max-Age=600/,
+    );
+    expect(cookies).toMatch(
+      /portfolio_cms_session=.*SameSite=None; Secure; Max-Age=60/,
+    );
+    expect(requiredHeader(callback, "location")).toBe(adminOrigin);
+  });
+
   it("round-trips OAuth state through a browser cookie jar exactly once", async () => {
     const { app } = createTestAuth();
     const browser = request.agent(app);
