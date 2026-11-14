@@ -1944,6 +1944,9 @@ textarea[aria-invalid="true"]:focus-visible {
 .content-field-grid--three {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
+.content-field-grid--single {
+  grid-template-columns: minmax(0, 1fr);
+}
 .content-field {
   display: grid;
   gap: 0.375rem;

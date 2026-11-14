@@ -21,6 +21,8 @@ const httpUrl = z.url().refine((value) => {
 }, "URL must use HTTP or HTTPS");
 
 export const heroContentSchema = z.object({
+  /** Hero headline; optional for Hero content saved before it existed. */
+  title: requiredText(160).optional(),
   name: requiredText(120),
   role: requiredText(160),
   heroRole: requiredText(120),

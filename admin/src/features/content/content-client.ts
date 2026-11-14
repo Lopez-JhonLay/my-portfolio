@@ -42,10 +42,14 @@ function isText(value: unknown): value is string {
   return typeof value === "string";
 }
 
-function isHeroDocument(value: unknown): value is HeroDocument {
+function isHeroDocument(
+  value: unknown,
+): value is Omit<HeroDocument, "title"> & { readonly title?: string } {
   return (
     isRecord(value) &&
+    (value.title === undefined || isText(value.title)) &&
     hasOnlyKeys(value, [
+      "title",
       "name",
       "role",
       "heroRole",
@@ -155,7 +159,9 @@ function parseDocument(
   sectionKey: EditableContentSectionKey,
   value: unknown,
 ): EditableContentDocument {
-  if (sectionKey === "hero" && isHeroDocument(value)) return value;
+  // Hero content saved before the headline existed has no title yet.
+  if (sectionKey === "hero" && isHeroDocument(value))
+    return { ...value, title: value.title ?? "" };
   if (sectionKey === "about" && isAboutDocument(value)) return value;
   if (sectionKey === "timeline" && isTimelineDocument(value)) return value;
   if (sectionKey === "technologies" && isTechnologiesDocument(value))

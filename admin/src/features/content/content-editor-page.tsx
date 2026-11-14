@@ -29,7 +29,8 @@ type TextContentSectionKey = Exclude<EditableContentSectionKey, "media-resume">;
 const titles = {
   hero: {
     title: "Hero",
-    description: "Manage your name, role, location, and introduction.",
+    description:
+      "Manage your headline, name, role, location, and introduction.",
   },
   about: {
     title: "About Me",

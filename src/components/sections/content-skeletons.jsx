@@ -9,10 +9,13 @@ function LoadingMessage({ children }) {
 }
 LoadingMessage.propTypes = { children: PropTypes.node.isRequired };
 
-export function HeroBodySkeleton() {
+/** Mirrors the centered Hero layout: two-line headline, role, intro, button. */
+export function HeroSkeleton() {
   return (
-    <div className="content-skeleton hero-body-skeleton" role="status">
+    <div className="content-skeleton hero-skeleton" role="status">
       <LoadingMessage>Loading Hero content</LoadingMessage>
+      <span className="skeleton-block skeleton-title" aria-hidden="true" />
+      <span className="skeleton-block skeleton-title skeleton-title-short" aria-hidden="true" />
       <span className="skeleton-block skeleton-role" aria-hidden="true" />
       <span className="skeleton-block skeleton-copy" aria-hidden="true" />
       <span className="skeleton-block skeleton-copy skeleton-copy-short" aria-hidden="true" />

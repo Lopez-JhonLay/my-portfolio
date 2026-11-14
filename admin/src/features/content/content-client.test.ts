@@ -8,6 +8,7 @@ import {
 } from "./content-client.ts";
 
 const hero = {
+  title: "Web and Mobile Software",
   name: "Jhon",
   role: "Software Engineer",
   heroRole: "Developer",

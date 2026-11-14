@@ -43,6 +43,7 @@ function validateHero(
   errors: Record<string, string>,
 ): HeroDocument {
   return {
+    title: required(document.title, 160, "title", errors),
     name: required(document.name, 120, "name", errors),
     role: required(document.role, 160, "role", errors),
     heroRole: required(document.heroRole, 120, "heroRole", errors),

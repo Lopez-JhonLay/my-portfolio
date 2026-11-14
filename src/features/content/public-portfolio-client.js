@@ -27,10 +27,14 @@ function isHttpUrl(value) {
 }
 
 function parseHero(value) {
-  const keys = ['name', 'role', 'heroRole', 'location', 'description'];
+  const keys = ['title', 'name', 'role', 'heroRole', 'location', 'description'];
   if (!isRecord(value) || !hasOnlyKeys(value, keys)) throw new Error('Invalid Hero content');
   const limits = { name: 120, role: 160, heroRole: 120, location: 160, description: 2000 };
   if (Object.entries(limits).some(([key, maximum]) => !isText(value[key], maximum))) {
+    throw new Error('Invalid Hero content');
+  }
+  // The headline is optional: without one, the built-in headline is shown.
+  if (value.title !== undefined && !isText(value.title, 160)) {
     throw new Error('Invalid Hero content');
   }
   return value;
