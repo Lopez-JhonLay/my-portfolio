@@ -8,6 +8,20 @@
       "when": 1793340464707,
       "tag": "0000_initial-project-schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794068156555,
+      "tag": "0001_sturdy_nick_fury",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794143779095,
+      "tag": "0002_media-assets-galleries",
+      "breakpoints": true
     }
   ]
 }

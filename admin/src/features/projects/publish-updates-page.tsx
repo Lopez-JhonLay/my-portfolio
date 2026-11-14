@@ -179,6 +179,18 @@ export function PublishUpdatesPage({
             })}
           </ol>
         </section>
+
+        <section aria-labelledby="content-review-title">
+          <div className="publish-section-heading">
+            <div>
+              <h2 id="content-review-title">Saved portfolio content</h2>
+              <p>
+                All seven saved content documents are validated by the backend
+                and included in the same atomic snapshot.
+              </p>
+            </div>
+          </div>
+        </section>
       </div>
 
       <div className="publish-actions">
@@ -213,12 +225,14 @@ export function PublishUpdatesPage({
             </div>
             <AlertDialogDescription>
               This creates one atomic public snapshot from every eligible saved
-              Project draft and the saved Featured order. Unsaved edits are not
-              included, and publication is not automatically retried.
+              Project draft, the saved Featured order, and all saved portfolio
+              content. Unsaved edits are not included, and publication is not
+              automatically retried.
             </AlertDialogDescription>
             <div className="publish-dialog-scope">
               <span>{includedProjects.length} inclusion candidates</span>
               <span>3 saved Featured slots</span>
+              <span>7 saved content sections</span>
             </div>
             <div className="dialog-actions">
               <AlertDialogCancel asChild>

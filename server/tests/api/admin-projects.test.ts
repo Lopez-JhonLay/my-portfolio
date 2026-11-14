@@ -212,6 +212,7 @@ describe("authenticated Project draft API", () => {
       publicationIntent: "include",
       revision: "1",
       draft: createDraft(),
+      gallery: [],
     };
     expect(responseBody(list)).toEqual({
       projects: [expectedProject],

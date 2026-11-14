@@ -18,6 +18,7 @@ describe("validateEnvironment", () => {
         githubClientSecret: environment.GITHUB_CLIENT_SECRET,
         host: "127.0.0.1",
         port: 3000,
+        publicOrigin: environment.PUBLIC_ORIGIN,
         sessionTtlMs: 28_800_000,
       },
     });
@@ -38,8 +39,25 @@ describe("validateEnvironment", () => {
         githubClientSecret: "test-github-client-secret-value",
         host: "127.0.0.1",
         port: Number(port),
+        publicOrigin: "http://127.0.0.1:5173",
         sessionTtlMs: 28_800_000,
       },
+    });
+  });
+
+  it.each([
+    "postgresql://portfolio_owner:strong-neon-test-password@ep-example.us-east-2.aws.neon.tech/neondb?sslmode=require",
+    "postgresql://portfolio_owner:strong-neon-test-password@ep-example-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
+    "postgres://portfolio_owner:strong-neon-test-password@ep-example.eu-central-1.aws.neon.tech/neondb?sslmode=verify-full",
+    "postgresql://portfolio_owner:short@ep-example.us-east-2.aws.neon.tech/neondb?sslmode=require",
+  ])("accepts a secure Neon PostgreSQL URL", (databaseUrl) => {
+    const result = validateEnvironment(
+      createEnvironmentFixture({ DATABASE_URL: databaseUrl }),
+    );
+
+    expect(result).toMatchObject({
+      success: true,
+      data: { databaseUrl },
     });
   });
 
@@ -53,6 +71,7 @@ describe("validateEnvironment", () => {
         "GITHUB_CALLBACK_URL",
         "GITHUB_CLIENT_ID",
         "GITHUB_CLIENT_SECRET",
+        "PUBLIC_ORIGIN",
       ],
     });
   });
@@ -61,6 +80,7 @@ describe("validateEnvironment", () => {
     ["ADMIN_ORIGIN", "https://admin.example.com"],
     ["DATABASE_URL", "postgresql://user:password@database.example.com/cms"],
     ["GITHUB_CALLBACK_URL", "https://api.example.com/api/auth/github/callback"],
+    ["PUBLIC_ORIGIN", "https://portfolio.example.com"],
   ] as const)("rejects non-local %s", (field, value) => {
     const result = validateEnvironment(
       createEnvironmentFixture({ [field]: value }),
@@ -68,6 +88,38 @@ describe("validateEnvironment", () => {
 
     expect(result).toEqual({ success: false, invalidFields: [field] });
     expect(JSON.stringify(result)).not.toContain(value);
+  });
+
+  it.each([
+    "postgresql://portfolio_owner:strong-neon-test-password@ep-example.us-east-2.aws.neon.tech/neondb",
+    "postgresql://portfolio_owner:strong-neon-test-password@ep-example.us-east-2.aws.neon.tech/neondb?sslmode=disable",
+    "postgresql://portfolio_owner:strong-neon-test-password@ep-example.us-east-2.aws.neon.tech/neondb?sslmode=require&application_name=unexpected",
+    "postgresql://portfolio_owner:strong-neon-test-password@ep-example.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=disable",
+  ])("rejects an insecure or unsupported Neon URL", (databaseUrl) => {
+    const result = validateEnvironment(
+      createEnvironmentFixture({ DATABASE_URL: databaseUrl }),
+    );
+
+    expect(result).toEqual({
+      success: false,
+      invalidFields: ["DATABASE_URL"],
+    });
+    expect(JSON.stringify(result)).not.toContain(databaseUrl);
+  });
+
+  it.each([
+    "postgresql://portfolio_owner:@ep-example.us-east-2.aws.neon.tech/neondb?sslmode=require",
+    "postgresql://portfolio_cms_dev:short@127.0.0.1:5432/portfolio_cms_dev",
+  ])("rejects a missing or unsafe database password", (databaseUrl) => {
+    const result = validateEnvironment(
+      createEnvironmentFixture({ DATABASE_URL: databaseUrl }),
+    );
+
+    expect(result).toEqual({
+      success: false,
+      invalidFields: ["DATABASE_URL"],
+    });
+    expect(JSON.stringify(result)).not.toContain(databaseUrl);
   });
 
   it.each(["localhost", "0.0.0.0", "::1", ""])(

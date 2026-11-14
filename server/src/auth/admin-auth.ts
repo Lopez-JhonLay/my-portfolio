@@ -144,7 +144,7 @@ export function createAdminOriginMiddleware(
         "Access-Control-Allow-Credentials": "true",
         "Access-Control-Allow-Headers":
           "Content-Type, Idempotency-Key, X-CSRF-Token",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
         "Access-Control-Allow-Origin": adminOrigin,
         Vary: "Origin",
       });

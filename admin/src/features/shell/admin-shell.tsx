@@ -4,9 +4,14 @@ import {
   LogOut,
   Menu,
   Moon,
+  MessageSquare,
+  Clock3,
+  Wrench,
   Send,
+  Sparkles,
   Star,
   Sun,
+  UserRound,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
@@ -33,6 +38,11 @@ type AdminShellProps = {
 const navigation = [
   { to: "/", label: "Overview", icon: Home, end: true },
   { to: "/projects", label: "Projects", icon: FolderKanban, end: false },
+  { to: "/hero", label: "Hero", icon: Sparkles, end: true },
+  { to: "/about", label: "About Me", icon: UserRound, end: true },
+  { to: "/timeline", label: "Timeline", icon: Clock3, end: true },
+  { to: "/technologies", label: "Technologies", icon: Wrench, end: true },
+  { to: "/contact", label: "Contact", icon: MessageSquare, end: true },
   { to: "/featured", label: "Featured Projects", icon: Star, end: true },
   { to: "/publish", label: "Publish Updates", icon: Send, end: true },
 ] as const;

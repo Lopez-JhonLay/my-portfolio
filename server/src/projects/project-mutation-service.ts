@@ -3,19 +3,22 @@ import { createHash } from "node:crypto";
 import type { TransactionSessionBoundary } from "../db/database-session.ts";
 import type {
   DraftFeaturedSlots,
+  ProjectGallery,
   ProjectId,
   ProjectVersion,
 } from "./project-contract.ts";
 
 export type MutationOperationKind =
   "save_project_draft" | "save_featured_draft";
-export type PersistedOperationKind = MutationOperationKind | "publish";
+export type PersistedOperationKind =
+  MutationOperationKind | "save_content_draft" | "publish";
 export type MutationOutcomeCode =
   | "project_draft_created"
   | "project_draft_saved"
   | "featured_draft_saved"
   | "stale_revision"
-  | "invalid_featured_reference";
+  | "invalid_featured_reference"
+  | "invalid_gallery_reference";
 
 type MutationOperationBase = {
   readonly operationId: string;
@@ -75,12 +78,15 @@ export type ProjectMutationQueries = {
   insertProjectDraft(
     projectId: ProjectId,
     draft: ProjectVersion,
+    gallery?: ProjectGallery,
   ): Promise<void>;
+  countReadyImages?(mediaIds: readonly string[]): Promise<number>;
   lockProjectRevision(projectId: ProjectId): Promise<bigint | null>;
   updateProjectDraft(
     projectId: ProjectId,
     expectedRevision: bigint,
     draft: ProjectVersion,
+    gallery?: ProjectGallery,
   ): Promise<bigint | null>;
   lockFeaturedDraft(): Promise<{
     readonly revision: bigint;
@@ -97,12 +103,14 @@ export type ProjectMutationService = {
   createProjectDraft(command: {
     readonly operationId: string;
     readonly draft: ProjectVersion;
+    readonly gallery?: ProjectGallery;
   }): Promise<MutationCommandResult>;
   saveProjectDraft(command: {
     readonly operationId: string;
     readonly projectId: ProjectId;
     readonly expectedRevision: bigint;
     readonly draft: ProjectVersion;
+    readonly gallery?: ProjectGallery;
   }): Promise<MutationCommandResult>;
   saveDraftFeatured(command: {
     readonly operationId: string;
@@ -146,7 +154,7 @@ function fingerprint(intent: unknown): string {
 function operationView(
   operation: MutationOperationRecord,
 ): MutationOperationView {
-  if (operation.kind === "publish") {
+  if (operation.kind === "publish" || operation.kind === "save_content_draft") {
     throw new ProjectMutationConsistencyError(
       "Publication operation cannot be exposed as a draft mutation",
     );
@@ -172,6 +180,7 @@ function terminalOperationView(
     "featured_draft_saved",
     "stale_revision",
     "invalid_featured_reference",
+    "invalid_gallery_reference",
   ];
   if (
     operation.outcomeCode === null ||
@@ -267,10 +276,12 @@ export function createProjectMutationService<Session>(
   }
 
   return {
-    createProjectDraft: async ({ operationId, draft }) => {
+    createProjectDraft: async ({ operationId, draft, gallery }) => {
+      const resolvedGallery = gallery ?? [];
       const requestFingerprint = fingerprint({
         action: "create_project_draft",
         draft: normalizedDraft(draft),
+        gallery: resolvedGallery,
       });
       const expected = {
         kind: "save_project_draft" as const,
@@ -286,7 +297,17 @@ export function createProjectMutationService<Session>(
           }
 
           const projectId = await queries.insertProject();
-          await queries.insertProjectDraft(projectId, draft);
+          const mediaIds = resolvedGallery.map(({ mediaId }) => mediaId);
+          if (
+            mediaIds.length > 0 &&
+            (queries.countReadyImages === undefined ||
+              (await queries.countReadyImages(mediaIds)) !== mediaIds.length)
+          ) {
+            throw new ProjectMutationConsistencyError(
+              "Project gallery references unavailable image media",
+            );
+          }
+          await queries.insertProjectDraft(projectId, draft, resolvedGallery);
           const operation: MutationOperationRecord = {
             operationId,
             kind: "save_project_draft",
@@ -323,12 +344,15 @@ export function createProjectMutationService<Session>(
       projectId,
       expectedRevision,
       draft,
+      gallery,
     }) => {
+      const resolvedGallery = gallery ?? [];
       const requestFingerprint = fingerprint({
         action: "save_project_draft",
         projectId,
         expectedRevision: expectedRevision.toString(),
         draft: normalizedDraft(draft),
+        gallery: resolvedGallery,
       });
       const expected = {
         kind: "save_project_draft" as const,
@@ -388,10 +412,24 @@ export function createProjectMutationService<Session>(
           });
         }
 
+        const mediaIds = resolvedGallery.map(({ mediaId }) => mediaId);
+        if (
+          mediaIds.length > 0 &&
+          (queries.countReadyImages === undefined ||
+            (await queries.countReadyImages(mediaIds)) !== mediaIds.length)
+        ) {
+          return completeOperation(queries, operationId, {
+            status: "failed",
+            outcomeCode: "invalid_gallery_reference",
+            resultRevision: currentRevision,
+          });
+        }
+
         const resultRevision = await queries.updateProjectDraft(
           projectId,
           expectedRevision,
           draft,
+          resolvedGallery,
         );
         if (resultRevision === null) {
           throw new ProjectMutationConsistencyError(
@@ -499,7 +537,8 @@ export function createProjectMutationService<Session>(
           await createQueries(session).readOperation(operationId);
         return operation === null
           ? { status: "not-found" as const }
-          : operation.kind === "publish"
+          : operation.kind === "publish" ||
+              operation.kind === "save_content_draft"
             ? { status: "operation-conflict" as const, operationId }
             : operationView(operation);
       }),

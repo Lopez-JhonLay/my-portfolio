@@ -6,11 +6,17 @@ import type {
 } from "../db/database-session.ts";
 import {
   draftFeaturedState,
+  draftProjectMedia,
+  mediaAssets,
   projectDrafts,
   projectOperations,
   projects,
 } from "../db/schema/project-schema.ts";
-import type { ProjectVersion } from "./project-contract.ts";
+import type {
+  ProjectGallery,
+  ProjectId,
+  ProjectVersion,
+} from "./project-contract.ts";
 import {
   createProjectMutationService,
   ProjectMutationConsistencyError,
@@ -33,6 +39,16 @@ function draftValues(draft: ProjectVersion) {
     longDescriptionMarkdown: draft.longDescriptionMarkdown ?? null,
     groupOrder: draft.groupOrder,
   };
+}
+
+function galleryValues(projectId: ProjectId, gallery: ProjectGallery) {
+  return gallery.map((item, index) => ({
+    projectId,
+    mediaId: item.mediaId,
+    position: index + 1,
+    altText: item.altText,
+    isCover: item.isCover,
+  }));
 }
 
 const operationSelection = {
@@ -146,10 +162,29 @@ export function createDrizzleProjectMutationQueries(
       }
       return row.projectId;
     },
-    insertProjectDraft: async (projectId, draft) => {
+    insertProjectDraft: async (projectId, draft, gallery = []) => {
       await session
         .insert(projectDrafts)
         .values({ projectId, ...draftValues(draft) });
+      if (gallery.length > 0) {
+        await session
+          .insert(draftProjectMedia)
+          .values(galleryValues(projectId, gallery));
+      }
+    },
+    countReadyImages: async (mediaIds) => {
+      if (mediaIds.length === 0) return 0;
+      const rows = await session
+        .select({ value: count() })
+        .from(mediaAssets)
+        .where(
+          and(
+            inArray(mediaAssets.id, [...mediaIds]),
+            eq(mediaAssets.kind, "image"),
+            eq(mediaAssets.status, "ready"),
+          ),
+        );
+      return rows[0]?.value ?? 0;
     },
     lockProjectRevision: async (projectId) => {
       const rows = await session
@@ -160,7 +195,12 @@ export function createDrizzleProjectMutationQueries(
         .for("update");
       return rows[0]?.revision ?? null;
     },
-    updateProjectDraft: async (projectId, expectedRevision, draft) => {
+    updateProjectDraft: async (
+      projectId,
+      expectedRevision,
+      draft,
+      gallery = [],
+    ) => {
       const drafts = await session
         .update(projectDrafts)
         .set(draftValues(draft))
@@ -170,6 +210,14 @@ export function createDrizzleProjectMutationQueries(
         throw new ProjectMutationConsistencyError(
           "Locked Project draft row is missing",
         );
+      }
+      await session
+        .delete(draftProjectMedia)
+        .where(eq(draftProjectMedia.projectId, projectId));
+      if (gallery.length > 0) {
+        await session
+          .insert(draftProjectMedia)
+          .values(galleryValues(projectId, gallery));
       }
       const updated = await session
         .update(projects)

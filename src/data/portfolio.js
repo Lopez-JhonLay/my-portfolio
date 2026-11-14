@@ -23,6 +23,21 @@ export const navItems = [
   { label: 'Contact', href: '/#contact' },
 ];
 
+export const heroContent = {
+  browserTitle: 'Vite + React',
+  name: profile.name,
+  brand: profile.brand,
+  role: profile.role,
+  heroRole: profile.heroRole,
+  location: profile.location,
+  navigation: navItems,
+  sectionTag: 'Case No. 001 - Open File',
+  title: profile.heroTitle,
+  description: profile.heroTag,
+  resumeButtonLabel: 'Download Resume',
+  scrollCue: 'Descend',
+};
+
 export const about = {
   eyebrow: '01 - Subject Profile',
   title: 'The Case File',
@@ -39,12 +54,15 @@ export const about = {
     { label: 'Focus', value: 'Web, Mobile, AI, DevOps' },
     { label: 'Status', value: 'Open to Work' },
   ],
+  stamp: 'CLEARED',
+  photoCaptionPrefix: 'Subject on record -',
 };
 
 export const personalProjects = [
   {
     number: 'File 01',
     name: 'Ya Gameela',
+    slug: 'ya-gameela',
     category: 'Personal Project',
     description:
       'A product catalog and custom content management system for a lifestyle brand, built around storefront and publishing workflows.',
@@ -55,6 +73,7 @@ export const personalProjects = [
   {
     number: 'File 02',
     name: 'DevFlow',
+    slug: 'devflow',
     category: 'Personal Project',
     description:
       'A full-stack developer workspace for organizing projects, Markdown documentation, assets, and reusable code snippets.',
@@ -65,6 +84,7 @@ export const personalProjects = [
   {
     number: 'File 03',
     name: 'Rental Bill Management System',
+    slug: 'rental-bill-management-system',
     category: 'Personal Project',
     description:
       'A rental management app for tracking units, tenants, utility readings, and monthly bills with saved rate details.',
@@ -75,6 +95,7 @@ export const personalProjects = [
   {
     number: 'File 04',
     name: 'Classroom Randomizer',
+    slug: 'classroom-randomizer',
     category: 'Personal Project',
     description:
       'A classroom tool for managing student lists and selecting students fairly with an animated result.',
@@ -88,6 +109,7 @@ export const capstoneProjects = [
   {
     number: 'File 06',
     name: 'Barangay Information System',
+    slug: 'barangay-information-system',
     category: 'Capstone Project',
     description:
       'A team-built information system for Brgy. Central Bicutan, Taguig, focused on practical local-service workflows.',
@@ -101,6 +123,7 @@ export const workProjects = [
   {
     number: 'File 05',
     name: 'LottoMatik Marketing Website',
+    slug: 'lottomatik-marketing-website',
     category: 'Work Project',
     description:
       'Developed and maintained responsive public pages and interactive features, including an Agent Locator with Google Maps, location search, filtering, and API-driven agent data.',
@@ -134,6 +157,13 @@ export const experience = [
   },
 ];
 
+export const timelineContent = {
+  eyebrow: '03 - Field Notes',
+  title: 'Timeline',
+  lead: 'A record of my professional experience and education.',
+  entries: experience,
+};
+
 export const skillGroups = [
   {
     category: 'Frontend',
@@ -157,6 +187,27 @@ export const skillGroups = [
   },
 ];
 
+const technologyIconKeys = {
+  TypeScript: 'typescript', JavaScript: 'javascript', React: 'react', 'Next.js': 'nextjs',
+  'Vue.js': 'vue', 'Material UI': 'material-ui', 'Tailwind CSS': 'tailwind-css',
+  'Node.js': 'nodejs', NestJS: 'nestjs', 'Cloudflare Workers': 'cloudflare-workers',
+  PostgreSQL: 'postgresql', BigQuery: 'bigquery', 'Google Cloud Platform': 'google-cloud',
+  Cloudflare: 'cloudflare', 'GitHub Actions': 'github-actions', Git: 'git', GitHub: 'github', JWT: 'jwt',
+};
+
+export const technologiesContent = {
+  eyebrow: '04 - Tools of the Trade',
+  title: 'The Arsenal',
+  lead: 'Technologies I use across frontend, backend, data, cloud, and testing.',
+  groups: skillGroups.map((group) => ({
+    category: group.category,
+    technologies: group.skills.map((name) => ({
+      name,
+      ...(technologyIconKeys[name] ? { iconKey: technologyIconKeys[name] } : {}),
+    })),
+  })),
+};
+
 export const socialLinks = [
   {
     label: 'GitHub',
@@ -171,3 +222,19 @@ export const socialLinks = [
     href: 'https://www.facebook.com/jhonlay.lopez.1',
   },
 ];
+
+export const contactContent = {
+  eyebrow: '05 - Make Contact',
+  title: 'Open a Line',
+  availability: profile.availability,
+  noteTitle: 'Leave Word',
+  noteBody:
+    'Send a message about internship opportunities, collaborations, or software projects worth building.',
+  email: profile.email,
+  socialLinks: socialLinks.map((link) => ({
+    ...link,
+    iconKey: link.label.toLowerCase(),
+  })),
+  footerPrimary: `(c) 2026 ${profile.name} - Case file active`,
+  footerSecondary: 'Built in the dark. Reads fine in the light.',
+};

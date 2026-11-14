@@ -2,8 +2,17 @@ import { ArrowRight, FolderOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { personalProjects } from "@/data/portfolio";
 import { ProjectCard } from "@/components/projects/ProjectCard";
+import { ProjectLoadState } from "@/components/projects/project-load-state";
+import { usePublicProjects } from "@/features/projects/use-public-projects";
+
+const STATIC_FEATURED_PROJECTS = personalProjects.slice(0, 3);
 
 export function Projects() {
+  const projectsState = usePublicProjects({
+    resource: "featured",
+    staticProjects: STATIC_FEATURED_PROJECTS,
+  });
+
   return (
     <motion.section
       className="noir-section"
@@ -26,11 +35,21 @@ export function Projects() {
       <div className="corkboard">
         <div className="string string-one" aria-hidden="true" />
         <div className="string string-two" aria-hidden="true" />
-        <div className="case-grid">
-          {personalProjects.slice(0, 3).map((project) => (
-            <ProjectCard project={project} key={project.name} />
-          ))}
-        </div>
+        {projectsState.status === "ready" ? (
+          <div className="case-grid">
+            {projectsState.projects.map((project) => (
+              <ProjectCard
+                project={project}
+                key={project.slug || project.name}
+              />
+            ))}
+          </div>
+        ) : (
+          <ProjectLoadState
+            status={projectsState.status}
+            onRetry={projectsState.retry}
+          />
+        )}
       </div>
       <div className="projects-footer">
         <a className="noir-button noir-button-ghost" href="/all-projects">

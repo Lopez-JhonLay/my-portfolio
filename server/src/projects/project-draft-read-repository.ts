@@ -1,4 +1,4 @@
-import { asc, count, eq, sql } from "drizzle-orm";
+import { asc, count, eq, inArray, sql } from "drizzle-orm";
 
 import type {
   ProjectDatabaseTransaction,
@@ -6,10 +6,15 @@ import type {
 } from "../db/database-session.ts";
 import {
   draftFeaturedState,
+  draftProjectMedia,
   projectDrafts,
   projects,
 } from "../db/schema/project-schema.ts";
-import type { ProjectId, ProjectVersion } from "./project-contract.ts";
+import type {
+  ProjectGallery,
+  ProjectId,
+  ProjectVersion,
+} from "./project-contract.ts";
 
 export type AdminProjectDraft = {
   readonly id: ProjectId;
@@ -17,6 +22,7 @@ export type AdminProjectDraft = {
   readonly publicationIntent: "include" | "exclude";
   readonly revision: bigint;
   readonly draft: ProjectVersion;
+  readonly gallery?: ProjectGallery;
 };
 
 export type AdminFeaturedDraft = {
@@ -73,7 +79,10 @@ type ProjectDraftRow = {
   readonly groupOrder: number;
 };
 
-function mapProject(row: ProjectDraftRow): AdminProjectDraft {
+function mapProject(
+  row: ProjectDraftRow,
+  gallery: ProjectGallery = [],
+): AdminProjectDraft {
   return {
     id: row.id,
     lifecycle: row.lifecycle,
@@ -94,7 +103,39 @@ function mapProject(row: ProjectDraftRow): AdminProjectDraft {
         : { longDescriptionMarkdown: row.longDescriptionMarkdown }),
       groupOrder: row.groupOrder,
     },
+    gallery,
   };
+}
+
+async function readGalleries(
+  session: ProjectDatabaseTransaction,
+  projectIds: readonly ProjectId[],
+): Promise<Map<ProjectId, ProjectGallery>> {
+  if (projectIds.length === 0) return new Map();
+  const rows = await session
+    .select({
+      projectId: draftProjectMedia.projectId,
+      mediaId: draftProjectMedia.mediaId,
+      altText: draftProjectMedia.altText,
+      isCover: draftProjectMedia.isCover,
+    })
+    .from(draftProjectMedia)
+    .where(inArray(draftProjectMedia.projectId, [...projectIds]))
+    .orderBy(asc(draftProjectMedia.projectId), asc(draftProjectMedia.position));
+  const galleries = new Map<ProjectId, ProjectGallery>();
+  for (const projectId of projectIds) {
+    galleries.set(
+      projectId,
+      rows
+        .filter((row) => row.projectId === projectId)
+        .map(({ mediaId, altText, isCover }) => ({
+          mediaId,
+          altText,
+          isCover,
+        })),
+    );
+  }
+  return galleries;
 }
 
 function selectProject(session: ProjectDatabaseTransaction) {
@@ -125,8 +166,12 @@ export function createDrizzleProjectDraftReadRepository(
           .offset(offset);
         const totals = await session.select({ value: count() }).from(projects);
 
+        const galleries = await readGalleries(
+          session,
+          rows.map(({ id }) => id),
+        );
         return {
-          projects: rows.map(mapProject),
+          projects: rows.map((row) => mapProject(row, galleries.get(row.id))),
           totalItems: totals[0]?.value ?? 0,
         };
       }),
@@ -135,7 +180,10 @@ export function createDrizzleProjectDraftReadRepository(
         const rows = await selectProject(session)
           .where(eq(projects.id, projectId))
           .limit(1);
-        return rows[0] === undefined ? null : mapProject(rows[0]);
+        const row = rows[0];
+        if (row === undefined) return null;
+        const galleries = await readGalleries(session, [row.id]);
+        return mapProject(row, galleries.get(row.id));
       }),
     readFeatured: () =>
       sessions.withSnapshot(async (session) => {

@@ -1,6 +1,8 @@
 import { FileText } from "lucide-react";
 import { motion } from "framer-motion";
 import { profile } from "@/data/portfolio";
+import PropTypes from "prop-types";
+import { HeroBodySkeleton } from "@/components/sections/content-skeletons";
 
 const WEB_HUB = { x: 930, y: 315 };
 const WEB_ANCHORS = [
@@ -49,7 +51,7 @@ function createWebRing(scale) {
   return `${path} Z`;
 }
 
-export function Hero() {
+export function Hero({ content, loading = false, resumeUrl = profile.portfolioUrl }) {
   return (
     <section className="noir-hero" id="home">
       <svg
@@ -80,21 +82,40 @@ export function Hero() {
         transition={{ duration: 0.5 }}
       >
         <div className="noir-hero-copy">
-          <span className="case-tag type">Case No. 001 - Open File</span>
-          <h1>{profile.heroTitle}</h1>
-          <p className="role">{profile.heroRole}</p>
-          <p className="tag">{profile.heroTag}</p>
+          <span className="case-tag type">{content.sectionTag}</span>
+          <h1>{content.title}</h1>
+          {loading ? (
+            <HeroBodySkeleton />
+          ) : (
+            <>
+              <p className="role">{content.heroRole}</p>
+              <p className="tag">{content.description}</p>
 
-          <div className="hero-cta">
-            <a className="noir-button noir-button-solid" href={profile.portfolioUrl} download>
-              <FileText />
-              Download Portfolio
-            </a>
-          </div>
+              <div className="hero-cta">
+                <a className="noir-button noir-button-solid" href={resumeUrl} download>
+                  <FileText />
+                  {content.resumeButtonLabel}
+                </a>
+              </div>
+            </>
+          )}
         </div>
       </motion.div>
 
-      <div className="scroll-cue type">Descend</div>
+      <div className="scroll-cue type">{content.scrollCue}</div>
     </section>
   );
 }
+
+Hero.propTypes = {
+  content: PropTypes.shape({
+    description: PropTypes.string.isRequired,
+    heroRole: PropTypes.string.isRequired,
+    resumeButtonLabel: PropTypes.string.isRequired,
+    scrollCue: PropTypes.string.isRequired,
+    sectionTag: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+  }).isRequired,
+  loading: PropTypes.bool,
+  resumeUrl: PropTypes.string,
+};

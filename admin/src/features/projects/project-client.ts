@@ -6,6 +6,7 @@ import {
   type FeaturedDraft,
   type PublicationOperation,
   type ProjectDraft,
+  type ProjectGallery,
   type ProjectList,
   type SaveResult,
   type SaveFeaturedResult,
@@ -69,6 +70,36 @@ function parseProjectDraft(value: unknown): ProjectDraft {
   return value as ProjectDraft;
 }
 
+function parseProjectGallery(value: unknown): ProjectGallery {
+  if (!Array.isArray(value) || value.length > 5) {
+    throw new Error("Invalid Project gallery response");
+  }
+  const gallery = value.map((item) => {
+    if (
+      !isRecord(item) ||
+      !hasOnlyKeys(item, ["mediaId", "altText", "isCover"]) ||
+      !isUuid(item.mediaId) ||
+      typeof item.altText !== "string" ||
+      typeof item.isCover !== "boolean"
+    ) {
+      throw new Error("Invalid Project gallery response");
+    }
+    return {
+      mediaId: item.mediaId,
+      altText: item.altText,
+      isCover: item.isCover,
+    };
+  });
+  if (
+    new Set(gallery.map(({ mediaId }) => mediaId)).size !== gallery.length ||
+    (gallery.length > 0 &&
+      gallery.filter(({ isCover }) => isCover).length !== 1)
+  ) {
+    throw new Error("Invalid Project gallery response");
+  }
+  return gallery;
+}
+
 export function parseAdminProject(value: unknown): AdminProject {
   if (
     !isRecord(value) ||
@@ -78,6 +109,7 @@ export function parseAdminProject(value: unknown): AdminProject {
       "publicationIntent",
       "revision",
       "draft",
+      "gallery",
     ]) ||
     !isUuid(value.id) ||
     (value.lifecycle !== "active" && value.lifecycle !== "trashed") ||
@@ -93,6 +125,7 @@ export function parseAdminProject(value: unknown): AdminProject {
     publicationIntent: value.publicationIntent,
     revision: value.revision,
     draft: parseProjectDraft(value.draft),
+    gallery: parseProjectGallery(value.gallery ?? []),
   };
 }
 
@@ -123,6 +156,7 @@ function parseOperation(value: unknown): DraftOperation {
     "featured_draft_saved",
     "stale_revision",
     "invalid_featured_reference",
+    "invalid_gallery_reference",
   ] as const;
   if (
     (value.status === "succeeded" || value.status === "failed") &&
@@ -312,11 +346,12 @@ export function createProjectClient(apiOrigin: string) {
       operationId: string,
       csrfToken: string,
       draft: ProjectDraft,
+      gallery: ProjectGallery = [],
       signal?: AbortSignal,
     ) =>
       parseSaveResult(
         await adminRequest(apiOrigin, "/api/admin/projects", {
-          body: { draft },
+          body: { draft, gallery },
           csrfToken,
           method: "POST",
           operationId,
@@ -329,6 +364,7 @@ export function createProjectClient(apiOrigin: string) {
       csrfToken: string,
       expectedRevision: string,
       draft: ProjectDraft,
+      gallery: ProjectGallery,
       signal?: AbortSignal,
     ) =>
       parseSaveResult(
@@ -336,7 +372,7 @@ export function createProjectClient(apiOrigin: string) {
           apiOrigin,
           `/api/admin/projects/${projectId}/draft`,
           {
-            body: { draft, expectedRevision },
+            body: { draft, expectedRevision, gallery },
             csrfToken,
             method: "PUT",
             operationId,

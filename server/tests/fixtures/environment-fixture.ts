@@ -8,6 +8,7 @@ const DEFAULT_TEST_ENVIRONMENT = Object.freeze({
   GITHUB_CLIENT_SECRET: "test-github-client-secret-value",
   HOST: "127.0.0.1",
   PORT: "3000",
+  PUBLIC_ORIGIN: "http://127.0.0.1:5173",
 });
 
 type EnvironmentFixture = {
@@ -19,6 +20,7 @@ type EnvironmentFixture = {
   GITHUB_CLIENT_SECRET: string;
   HOST: string;
   PORT: string;
+  PUBLIC_ORIGIN: string;
 };
 
 export function createEnvironmentFixture(

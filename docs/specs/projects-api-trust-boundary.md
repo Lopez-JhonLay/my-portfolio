@@ -1,7 +1,7 @@
 # Projects API and Trust-Boundary Contract
 
 **Task:** `MVP-SPEC-003`
-**Status:** Implemented locally; owner review pending
+**Status:** Owner-approved; Stage 4 implementation authorized
 **Scope:** Projects-first public and authenticated API boundaries
 **Requirements:** `CMS-REQ-002–004`, `CMS-REQ-006–009`, `CMS-REQ-013–016`, `CMS-REQ-021`, `CMS-REQ-025–027`, `CMS-DEC-PROJ-001–004`, `CMS-DEC-PROJ-006–021`, `CMS-DEC-PROJ-033–046`
 
@@ -45,13 +45,19 @@ All public resources are read-only and live below `/api/projects`:
 
 | Method and resource | Direct success body | Public outcome |
 | --- | --- | --- |
+| `GET /api/projects/status` | `{ status: "never-published" | "published" }` | The minimum source-authority state needed for the approved first-publication cutover. |
 | `GET /api/projects` | `PublicProjectGroupsDto` | The published Personal, Work, and Capstone groups in fixed group order and published within-group order. |
 | `GET /api/projects/featured` | `PublicFeaturedProjectsDto` | Exactly three distinct published cards in featured-slot order. |
 | `GET /api/projects/:slug` | `PublicProjectDetailDto` | One current published detail, a safe prior-published-slug redirect, or public not-found. |
 
-`/api/projects/featured` is a reserved collection resource and must be matched
-before the slug route. Query-driven draft selection, preview flags, publication
-versions, and administrative filters are not public API features.
+`/api/projects/status` and `/api/projects/featured` are reserved collection
+resources and must be matched before the slug route. Query-driven draft
+selection, preview flags, publication versions, and administrative filters are
+not public API features.
+
+The status resource exposes no snapshot revision, operation identifier,
+timestamp, Project identifier, or protected publication state. A failed status
+read is an availability failure; clients must not infer `never-published`.
 
 A safe prior-slug result may redirect only to the current published slug for
 the same Project. The redirect target must be resolved from published state;
@@ -254,6 +260,11 @@ No `stale-if-error`, stale-while-revalidate, hidden automatic retry, or normal
 static fallback is permitted. A future public conditional-cache design requires
 separate approval and must preserve publication freshness, valid empty and
 not-found semantics, and draft isolation.
+
+The public browser client uses the validated `VITE_PUBLIC_API_ORIGIN`. The
+server validates `PUBLIC_ORIGIN`, allows credential-free public GET responses
+only for that exact browser origin, and permits originless direct/server reads.
+This public CORS boundary does not change the protected Admin CORS contract.
 
 ## URL and Markdown transport safety
 

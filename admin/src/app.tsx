@@ -6,12 +6,26 @@ import {
   type AdminSession,
 } from "./features/auth/auth-client";
 import { ProjectsDashboard } from "./features/projects/projects-dashboard";
+import { ContentEditorPage } from "./features/content/content-editor-page";
+import type { EditableContentSectionKey } from "./features/content/content-contract";
 import { AdminShell } from "./features/shell/admin-shell";
 import { resolveAdminView } from "./features/shell/admin-route";
 import { UnsavedChangesDialog } from "./features/shell/unsaved-changes-dialog";
 import { AdminApiError } from "./lib/admin-http";
 
 const DEFAULT_API_ORIGIN = "http://127.0.0.1:3000";
+type TextContentView = Exclude<EditableContentSectionKey, "media-resume">;
+const TEXT_CONTENT_VIEWS: readonly TextContentView[] = [
+  "hero",
+  "about",
+  "timeline",
+  "technologies",
+  "contact",
+];
+
+function isTextContentView(value: string): value is TextContentView {
+  return TEXT_CONTENT_VIEWS.includes(value as TextContentView);
+}
 
 function apiOrigin(): string {
   const configuredValue = import.meta.env.VITE_API_ORIGIN as unknown;
@@ -184,14 +198,26 @@ export function App() {
   return (
     <>
       <AdminShell isBusy={isLoggingOut} onLogout={requestLogout}>
-        <ProjectsDashboard
-          apiOrigin={origin}
-          csrfToken={csrfToken}
-          onDiscardReady={registerDiscardChanges}
-          onDirtyChange={setHasUnsavedChanges}
-          onUnauthorized={markUnauthorized}
-          view={view}
-        />
+        {isTextContentView(view) ? (
+          <ContentEditorPage
+            apiOrigin={origin}
+            csrfToken={csrfToken}
+            key={view}
+            onDiscardReady={registerDiscardChanges}
+            onDirtyChange={setHasUnsavedChanges}
+            onUnauthorized={markUnauthorized}
+            sectionKey={view}
+          />
+        ) : (
+          <ProjectsDashboard
+            apiOrigin={origin}
+            csrfToken={csrfToken}
+            onDiscardReady={registerDiscardChanges}
+            onDirtyChange={setHasUnsavedChanges}
+            onUnauthorized={markUnauthorized}
+            view={view}
+          />
+        )}
       </AdminShell>
       <UnsavedChangesDialog
         action={blocker.state === "blocked" ? "leave" : "logout"}

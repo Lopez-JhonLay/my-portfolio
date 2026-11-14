@@ -23,6 +23,34 @@ export const projectIdSchema = nonEmptyTextSchema.brand<"ProjectId">();
 export const projectCategorySchema = z.enum(PROJECT_CATEGORY_ORDER);
 export const projectLifecycleSchema = z.enum(["active", "trashed"]);
 export const projectPublicationIntentSchema = z.enum(["include", "exclude"]);
+export const projectGalleryItemSchema = z
+  .strictObject({
+    mediaId: z.uuid(),
+    altText: nonEmptyTextSchema.max(300),
+    isCover: z.boolean(),
+  })
+  .readonly();
+export const projectGallerySchema = z
+  .array(projectGalleryItemSchema)
+  .max(5)
+  .superRefine((gallery, context) => {
+    if (
+      new Set(gallery.map(({ mediaId }) => mediaId)).size !== gallery.length
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Project gallery media must be distinct",
+      });
+    }
+    const coverCount = gallery.filter(({ isCover }) => isCover).length;
+    if (gallery.length > 0 && coverCount !== 1) {
+      context.addIssue({
+        code: "custom",
+        message: "A non-empty Project gallery requires exactly one cover",
+      });
+    }
+  })
+  .readonly();
 
 /** Transport-neutral content for one draft or published Project version. */
 export const projectVersionSchema = z
@@ -165,6 +193,7 @@ export type ProjectLifecycle = z.output<typeof projectLifecycleSchema>;
 export type ProjectPublicationIntent = z.output<
   typeof projectPublicationIntentSchema
 >;
+export type ProjectGallery = z.output<typeof projectGallerySchema>;
 export type ProjectVersion = z.output<typeof projectVersionSchema>;
 export type ProjectRecord = z.output<typeof projectRecordSchema>;
 export type DraftFeaturedSlots = z.output<typeof draftFeaturedSlotsSchema>;

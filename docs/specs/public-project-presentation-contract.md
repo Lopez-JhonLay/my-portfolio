@@ -1,7 +1,7 @@
 # Public Project Presentation Contract
 
 **Task:** `MVP-SPEC-002`
-**Status:** Implemented locally; owner review pending
+**Status:** Owner-approved; Stage 4 implementation authorized
 **Scope:** Public portfolio presentation and Project content-transport boundary
 **Requirements:** `CMS-REQ-004`, `CMS-REQ-013–015`, `CMS-REQ-020`, `CMS-REQ-025–027`, `CMS-DEC-PROJ-006–013`, `CMS-DEC-PROJ-016–021`
 
@@ -102,23 +102,20 @@ three existing arrays into the same presentation view models used by published
 transport. This boundary does not authorize changing the static data or
 enabling the detail route.
 
-### Approved migration-fallback state
+### Approved first-publication cutover state
 
-During only the migration window approved under `MVP-SPEC-014`, published API
-data is primary and an owner-approved static artifact may be used only after an
-availability failure. The fallback artifact contains published content only.
+Before the first successful publication, the backend's explicit
+`never-published` status keeps the existing six static Projects authoritative.
+An unavailable or malformed status is an error and never activates static
+content. The first successful publication permanently makes the published
+database snapshot authoritative for normal reads.
 
-Fallback must not activate for:
-
-- a valid empty result;
-- an unknown or non-public slug;
-- an Unpublish outcome;
-- a published Trash removal;
-- a deletion outcome; or
-- any draft, preview, or unresolved operation state.
-
-Fallback never promotes a draft, exposes protected data, or resurrects content
-intentionally removed from the published snapshot.
+After publication, timeout, transport failure, malformed response, or server
+failure displays Error and manual Retry. Static and published Projects are
+never merged, and static content is never substituted after publication. This
+decision approves only the Stage 4 source-authority cutover; migration import,
+backup, rollback, restore, deployment, and production cutover execution remain
+separately gated under `MVP-SPEC-014`.
 
 ### Database-authoritative state
 

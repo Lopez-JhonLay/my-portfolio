@@ -2,7 +2,13 @@ import { createHash } from "node:crypto";
 
 import type { TransactionSessionBoundary } from "../db/database-session.ts";
 import {
+  parseContentDocument,
+  type ContentDocument,
+  type ContentSectionKey,
+} from "../content/content-contract.ts";
+import {
   projectPublishCandidateSchema,
+  type ProjectGallery,
   type ProjectId,
   type ProjectPublishCandidate,
   type ProjectRecord,
@@ -54,6 +60,16 @@ export type PublicationCandidateState = {
     readonly slug: string;
   }[];
   readonly snapshotRevision: bigint | null;
+  readonly contentSections?: readonly {
+    readonly sectionKey: ContentSectionKey;
+    readonly document: ContentDocument;
+  }[];
+  readonly projectGalleries?: readonly {
+    readonly projectId: ProjectId;
+    readonly gallery: ProjectGallery;
+  }[];
+  readonly galleryAssetsReady?: boolean;
+  readonly contentMediaReady?: boolean;
 };
 
 export type ProjectPublicationQueries = {
@@ -71,6 +87,14 @@ export type ProjectPublicationQueries = {
   lockCandidate(): Promise<PublicationCandidateState>;
   publishSnapshot(input: {
     readonly candidate: ProjectPublishCandidate;
+    readonly contentSections: readonly {
+      readonly sectionKey: ContentSectionKey;
+      readonly document: ContentDocument;
+    }[];
+    readonly projectGalleries?: readonly {
+      readonly projectId: ProjectId;
+      readonly gallery: ProjectGallery;
+    }[];
     readonly operationId: string;
     readonly snapshotRevision: bigint;
   }): Promise<void>;
@@ -157,9 +181,17 @@ function resolveOperation(
     : conflict(operation.operationId);
 }
 
-function validateCandidate(
-  state: PublicationCandidateState,
-): ProjectPublishCandidate | null {
+function validateCandidate(state: PublicationCandidateState): {
+  readonly candidate: ProjectPublishCandidate;
+  readonly contentSections: readonly {
+    readonly sectionKey: ContentSectionKey;
+    readonly document: ContentDocument;
+  }[];
+  readonly projectGalleries: readonly {
+    readonly projectId: ProjectId;
+    readonly gallery: ProjectGallery;
+  }[];
+} | null {
   const parsed = projectPublishCandidateSchema.safeParse({
     projects: state.projects,
     featuredProjectIds: state.featuredProjectIds,
@@ -194,7 +226,28 @@ function validateCandidate(
     return null;
   }
 
-  return parsed.data;
+  const contentSections = state.contentSections ?? [];
+  const projectGalleries = state.projectGalleries ?? [];
+  const includedIds = new Set(included.map(({ id }) => id));
+  if (
+    state.galleryAssetsReady === false ||
+    state.contentMediaReady === false ||
+    projectGalleries.some(({ projectId }) => !includedIds.has(projectId))
+  ) {
+    return null;
+  }
+  try {
+    return {
+      candidate: parsed.data,
+      contentSections: contentSections.map(({ sectionKey, document }) => ({
+        sectionKey,
+        document: parseContentDocument(sectionKey, document),
+      })),
+      projectGalleries,
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -270,8 +323,8 @@ export function createProjectPublicationService<Session>(
           if (operation.status !== "pending") return operationView(operation);
 
           const state = await queries.lockCandidate();
-          const candidate = validateCandidate(state);
-          if (candidate === null) {
+          const publication = validateCandidate(state);
+          if (publication === null) {
             return complete(queries, operationId, {
               status: "failed",
               outcomeCode: "publish_not_ready",
@@ -281,7 +334,9 @@ export function createProjectPublicationService<Session>(
 
           const snapshotRevision = (state.snapshotRevision ?? 0n) + 1n;
           await queries.publishSnapshot({
-            candidate,
+            candidate: publication.candidate,
+            contentSections: publication.contentSections,
+            projectGalleries: publication.projectGalleries,
             operationId,
             snapshotRevision,
           });

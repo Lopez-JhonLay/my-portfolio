@@ -1,4 +1,10 @@
-import { useEffect, useRef, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 
 import {
   PROJECT_CATEGORIES,
@@ -7,10 +13,19 @@ import {
 } from "./project-contract";
 
 type ProjectFormProps = {
+  readonly availableImages: readonly {
+    readonly id: string;
+    readonly originalFilename: string;
+    readonly previewUrl: string;
+  }[];
   readonly disabled: boolean;
   readonly errors: ProjectFormErrors;
   readonly isSaving: boolean;
   readonly onChange: (value: ProjectFormValue) => void;
+  readonly onUploadImage: (file: File) => Promise<{
+    readonly id: string;
+    readonly originalFilename: string;
+  }>;
   readonly onSubmit: () => void;
   readonly statusLabel: string;
   readonly submitDisabled: boolean;
@@ -84,17 +99,21 @@ function FormSection({
 }
 
 export function ProjectForm({
+  availableImages,
   disabled,
   errors,
   isSaving,
   onChange,
   onSubmit,
+  onUploadImage,
   statusLabel,
   submitDisabled,
   value,
 }: ProjectFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const errorCount = Object.keys(errors).length;
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadNotice, setUploadNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (errorCount === 0) return;
@@ -113,6 +132,40 @@ export function ProjectForm({
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     onSubmit();
+  }
+
+  function moveGalleryItem(from: number, to: number) {
+    const gallery = [...value.gallery];
+    const [item] = gallery.splice(from, 1);
+    if (item === undefined) return;
+    gallery.splice(to, 0, item);
+    update("gallery", gallery);
+  }
+
+  async function uploadGalleryImage(file: File | undefined) {
+    if (file === undefined || value.gallery.length >= 5) return;
+    setIsUploadingImage(true);
+    setUploadNotice("Uploading and verifying the screenshotâ€¦");
+    try {
+      const asset = await onUploadImage(file);
+      update("gallery", [
+        ...value.gallery,
+        {
+          mediaId: asset.id,
+          altText: "",
+          isCover: value.gallery.length === 0,
+        },
+      ]);
+      setUploadNotice(
+        `${asset.originalFilename} was added. Add alt text, then Save Draft.`,
+      );
+    } catch (error) {
+      setUploadNotice(
+        error instanceof Error ? error.message : "Upload failed.",
+      );
+    } finally {
+      setIsUploadingImage(false);
+    }
   }
 
   return (
@@ -306,6 +359,123 @@ export function ProjectForm({
               </span>
             )}
           </div>
+        </FormSection>
+
+        <FormSection
+          description="Select up to five ready images. Every image needs alt text and one image must be the cover."
+          id="gallery-heading"
+          title="Project gallery"
+        >
+          <div className="form-actions">
+            <label className="button button--secondary">
+              Upload screenshot
+              <input
+                accept="image/jpeg,image/png,image/webp"
+                disabled={isUploadingImage || value.gallery.length >= 5}
+                hidden
+                onChange={(event) => {
+                  const file = event.currentTarget.files?.[0];
+                  event.currentTarget.value = "";
+                  void uploadGalleryImage(file);
+                }}
+                type="file"
+              />
+            </label>
+          </div>
+          {uploadNotice ? <p role="status">{uploadNotice}</p> : null}
+          {errors.gallery ? (
+            <span className="field-error" role="alert">
+              {errors.gallery}
+            </span>
+          ) : null}
+          <div className="content-array-list">
+            {value.gallery.map((item, index) => {
+              const asset = availableImages.find(
+                ({ id }) => id === item.mediaId,
+              );
+              return (
+                <article className="content-array-card" key={item.mediaId}>
+                  <strong>{asset?.originalFilename ?? item.mediaId}</strong>
+                  {asset ? (
+                    <img
+                      alt=""
+                      className="project-gallery-preview"
+                      loading="lazy"
+                      src={asset.previewUrl}
+                    />
+                  ) : null}
+                  <label className="form-field">
+                    Alt text *
+                    <input
+                      onChange={(event) =>
+                        update(
+                          "gallery",
+                          value.gallery.map((entry, entryIndex) =>
+                            entryIndex === index
+                              ? { ...entry, altText: event.target.value }
+                              : entry,
+                          ),
+                        )
+                      }
+                      value={item.altText}
+                    />
+                  </label>
+                  <label>
+                    <input
+                      checked={item.isCover}
+                      name="project-cover"
+                      onChange={() =>
+                        update(
+                          "gallery",
+                          value.gallery.map((entry, entryIndex) => ({
+                            ...entry,
+                            isCover: entryIndex === index,
+                          })),
+                        )
+                      }
+                      type="radio"
+                    />{" "}
+                    Cover image
+                  </label>
+                  <div className="content-row-actions">
+                    <button
+                      disabled={index === 0}
+                      onClick={() => moveGalleryItem(index, index - 1)}
+                      type="button"
+                    >
+                      Move up
+                    </button>
+                    <button
+                      disabled={index === value.gallery.length - 1}
+                      onClick={() => moveGalleryItem(index, index + 1)}
+                      type="button"
+                    >
+                      Move down
+                    </button>
+                    <button
+                      onClick={() =>
+                        update(
+                          "gallery",
+                          value.gallery
+                            .filter((_, entryIndex) => entryIndex !== index)
+                            .map((entry, entryIndex) => ({
+                              ...entry,
+                              isCover: entryIndex === 0,
+                            })),
+                        )
+                      }
+                      type="button"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+          {value.gallery.length === 0 ? (
+            <p>No screenshots attached. Use Upload screenshot to add one.</p>
+          ) : null}
         </FormSection>
 
         <div className="form-actions">

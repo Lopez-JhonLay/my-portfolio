@@ -13,10 +13,12 @@
     "server"
   ],
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev.mjs",
+    "dev:public": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm run test:public && npm run test --workspaces --if-present",
+    "test:public": "node --test src/features/projects/public-projects-client.test.js src/features/content/public-portfolio-client.test.js",
     "preview": "vite preview",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "format:check": "prettier --check package.json .prettierrc.json && npm run format:check --workspace @portfolio-cms/admin && npm run format:check --workspace @portfolio-cms/server",
@@ -34,6 +36,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-icons": "^5.5.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.2.0",
     "tailwind-merge": "^3.0.1"
   },

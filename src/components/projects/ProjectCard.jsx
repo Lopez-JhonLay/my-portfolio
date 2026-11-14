@@ -1,6 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
+import { Link } from "react-router-dom";
 
 export function ProjectCard({ project }) {
   return (
@@ -10,6 +11,13 @@ export function ProjectCard({ project }) {
       transition={{ type: "spring", stiffness: 220, damping: 16 }}
     >
       <span className="pin" aria-hidden="true" />
+      {project.cover ? (
+        <img
+          className="case-cover"
+          src={project.cover.url}
+          alt={project.cover.altText}
+        />
+      ) : null}
       <div className="num type">{project.number}</div>
       <h3>{project.name}</h3>
       <p className="case-category type">{project.category}</p>
@@ -33,6 +41,12 @@ export function ProjectCard({ project }) {
         {project.liveUrl ? "View Live Site" : "View Repository"}
         <ArrowRight />
       </a>
+      {project.slug ? (
+        <Link className="case-link" to={`/projects/${project.slug}`}>
+          View details
+          <ArrowRight />
+        </Link>
+      ) : null}
     </motion.article>
   );
 }
@@ -47,5 +61,10 @@ ProjectCard.propTypes = {
     tech: PropTypes.arrayOf(PropTypes.string).isRequired,
     repo: PropTypes.string,
     liveUrl: PropTypes.string,
+    slug: PropTypes.string,
+    cover: PropTypes.shape({
+      altText: PropTypes.string.isRequired,
+      url: PropTypes.string.isRequired,
+    }),
   }).isRequired,
 };

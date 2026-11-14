@@ -8,7 +8,7 @@
     "lint": "eslint src vite.config.ts",
     "typecheck": "tsc --noEmit",
     "format:check": "prettier --check index.html package.json tsconfig.json vite.config.ts src",
-    "test": "node --experimental-strip-types --test --test-isolation=none src/features/projects/featured-projects-model.test.ts src/features/projects/project-contract.test.ts src/features/projects/project-list-model.test.ts src/features/projects/project-workspace-route.test.ts src/features/projects/publication-readiness.test.ts src/features/shell/admin-route.test.ts src/lib/admin-theme.test.ts",
+    "test": "node --experimental-strip-types --test --test-isolation=none src/features/content/content-client.test.ts src/features/content/content-ordering.test.ts src/features/content/content-validation.test.ts src/features/projects/featured-projects-model.test.ts src/features/projects/project-contract.test.ts src/features/projects/project-list-model.test.ts src/features/projects/project-workspace-route.test.ts src/features/projects/publication-readiness.test.ts src/features/shell/admin-route.test.ts src/lib/admin-theme.test.ts",
     "build": "npm run typecheck && vite build"
   },
   "dependencies": {

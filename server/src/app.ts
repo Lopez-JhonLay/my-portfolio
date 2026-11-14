@@ -14,8 +14,13 @@ type RequestLocals = {
 
 export type AppOptions = {
   readonly adminOrigin: string;
+  readonly adminContentRouter?: Router;
+  readonly adminMediaRouter?: Router;
   readonly adminProjectRouter?: Router;
   readonly authRouter: Router;
+  readonly publicProjectRouter?: Router;
+  readonly publicPortfolioRouter?: Router;
+  readonly publicMediaRouter?: Router;
 };
 
 export function createApp(options?: AppOptions): Express {
@@ -35,10 +40,25 @@ export function createApp(options?: AppOptions): Express {
 
   app.use("/health", healthRouter);
   if (options !== undefined) {
+    if (options.publicProjectRouter !== undefined) {
+      app.use("/api/projects", options.publicProjectRouter);
+    }
+    if (options.publicPortfolioRouter !== undefined) {
+      app.use("/api/portfolio", options.publicPortfolioRouter);
+    }
+    if (options.publicMediaRouter !== undefined) {
+      app.use("/api/media", options.publicMediaRouter);
+    }
     const originMiddleware = createAdminOriginMiddleware(options.adminOrigin);
     app.use("/api/auth", originMiddleware, options.authRouter);
     if (options.adminProjectRouter !== undefined) {
       app.use("/api/admin", originMiddleware, options.adminProjectRouter);
+    }
+    if (options.adminContentRouter !== undefined) {
+      app.use("/api/admin", originMiddleware, options.adminContentRouter);
+    }
+    if (options.adminMediaRouter !== undefined) {
+      app.use("/api/admin", originMiddleware, options.adminMediaRouter);
     }
   }
   app.use(notFoundHandler);

@@ -21,6 +21,7 @@ describe("createEnvironmentFixture", () => {
       GITHUB_CLIENT_SECRET: "test-github-client-secret-value",
       HOST: "127.0.0.1",
       PORT: "3000",
+      PUBLIC_ORIGIN: "http://127.0.0.1:5173",
     });
   });
 
@@ -38,6 +39,7 @@ describe("createEnvironmentFixture", () => {
       GITHUB_CLIENT_SECRET: "test-github-client-secret-value",
       HOST: "127.0.0.1",
       PORT: "5175",
+      PUBLIC_ORIGIN: "http://127.0.0.1:5173",
     });
     expect(defaultEnvironment).toEqual({
       ADMIN_ORIGIN: "http://127.0.0.1:5174",
@@ -49,6 +51,7 @@ describe("createEnvironmentFixture", () => {
       GITHUB_CLIENT_SECRET: "test-github-client-secret-value",
       HOST: "127.0.0.1",
       PORT: "3000",
+      PUBLIC_ORIGIN: "http://127.0.0.1:5173",
     });
     expect(overriddenEnvironment).not.toBe(defaultEnvironment);
   });
@@ -75,6 +78,7 @@ describe("Vitest isolation", () => {
       GITHUB_CLIENT_SECRET: "test-github-client-secret-value",
       HOST: "127.0.0.1",
       PORT: "3000",
+      PUBLIC_ORIGIN: "http://127.0.0.1:5173",
     });
   });
 

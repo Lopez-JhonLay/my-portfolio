@@ -128,8 +128,11 @@ describe("Project publication on PostgreSQL", () => {
 
   it("publishes one complete snapshot in featured order and replays duplicate requests", async () => {
     await createCandidate();
+    await expect(publishedReads().readStatus()).resolves.toEqual({
+      status: "never-published",
+    });
     await expect(publishedReads().readGroups()).resolves.toEqual({
-      status: "unavailable",
+      status: "never-published",
     });
 
     const first = await publications.publishUpdates({
@@ -143,6 +146,9 @@ describe("Project publication on PostgreSQL", () => {
     expect(first).toMatchObject({
       status: "succeeded",
       snapshotRevision: 1n,
+    });
+    await expect(publishedReads().readStatus()).resolves.toEqual({
+      status: "published",
     });
     await expect(publishedReads().readFeatured()).resolves.toMatchObject({
       status: "available",

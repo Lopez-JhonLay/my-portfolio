@@ -1,8 +1,11 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   check,
+  foreignKey,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -16,6 +19,11 @@ import {
   PROJECT_CATEGORY_ORDER,
   type ProjectId,
 } from "../../projects/project-contract.ts";
+import {
+  CONTENT_SECTION_KEYS,
+  type ContentDocument,
+  type ContentSectionKey,
+} from "../../content/content-contract.ts";
 
 export const projectCategoryEnum = pgEnum(
   "project_category",
@@ -36,7 +44,21 @@ export const publishedSlugKindEnum = pgEnum("published_slug_kind", [
 export const projectOperationKindEnum = pgEnum("project_operation_kind", [
   "save_project_draft",
   "save_featured_draft",
+  "save_content_draft",
   "publish",
+]);
+export const contentSectionKeyEnum = pgEnum(
+  "content_section_key",
+  CONTENT_SECTION_KEYS,
+);
+export const mediaAssetKindEnum = pgEnum("media_asset_kind", [
+  "image",
+  "resume_pdf",
+]);
+export const mediaAssetStatusEnum = pgEnum("media_asset_status", [
+  "pending",
+  "ready",
+  "failed",
 ]);
 export const projectOperationStatusEnum = pgEnum("project_operation_status", [
   "pending",
@@ -135,6 +157,85 @@ export const projectDrafts = pgTable(
   ],
 );
 
+export const mediaAssets = pgTable(
+  "media_assets",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    kind: mediaAssetKindEnum("kind").notNull(),
+    objectKey: text("object_key").notNull(),
+    mimeType: text("mime_type").notNull(),
+    byteSize: bigint("byte_size", { mode: "bigint" }).notNull(),
+    originalFilename: text("original_filename").notNull(),
+    status: mediaAssetStatusEnum("status").default("pending").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    unique("media_assets_object_key_unique").on(table.objectKey),
+    check(
+      "media_assets_object_key_non_blank",
+      sql`btrim(${table.objectKey}) <> ''`,
+    ),
+    check(
+      "media_assets_mime_type_non_blank",
+      sql`btrim(${table.mimeType}) <> ''`,
+    ),
+    check("media_assets_byte_size_positive", sql`${table.byteSize} > 0`),
+    check(
+      "media_assets_original_filename_non_blank",
+      sql`btrim(${table.originalFilename}) <> ''`,
+    ),
+    check(
+      "media_assets_kind_mime_type",
+      sql`(${table.kind} = 'image' AND ${table.mimeType} IN ('image/jpeg', 'image/png', 'image/webp')) OR (${table.kind} = 'resume_pdf' AND ${table.mimeType} = 'application/pdf')`,
+    ),
+  ],
+);
+
+export const draftProjectMedia = pgTable(
+  "draft_project_media",
+  {
+    projectId: uuid("project_id")
+      .$type<ProjectId>()
+      .notNull()
+      .references(() => projects.id, {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      }),
+    mediaId: uuid("media_id")
+      .notNull()
+      .references(() => mediaAssets.id, {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      }),
+    position: integer("position").notNull(),
+    altText: text("alt_text").notNull(),
+    isCover: boolean("is_cover").notNull(),
+  },
+  (table) => [
+    unique("draft_project_media_project_media_unique").on(
+      table.projectId,
+      table.mediaId,
+    ),
+    unique("draft_project_media_project_position_unique").on(
+      table.projectId,
+      table.position,
+    ),
+    uniqueIndex("draft_project_media_one_cover_per_project")
+      .on(table.projectId)
+      .where(sql`${table.isCover}`),
+    check("draft_project_media_position_positive", sql`${table.position} > 0`),
+    check(
+      "draft_project_media_alt_text_non_blank",
+      sql`btrim(${table.altText}) <> ''`,
+    ),
+  ],
+);
+
 export const draftFeaturedState = pgTable(
   "draft_featured_state",
   {
@@ -224,6 +325,49 @@ export const publishedProjects = pgTable(
   ],
 );
 
+export const publishedProjectMedia = pgTable(
+  "published_project_media",
+  {
+    projectId: uuid("project_id")
+      .$type<ProjectId>()
+      .notNull()
+      .references(() => publishedProjects.projectId, {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      }),
+    mediaId: uuid("media_id")
+      .notNull()
+      .references(() => mediaAssets.id, {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      }),
+    position: integer("position").notNull(),
+    altText: text("alt_text").notNull(),
+    isCover: boolean("is_cover").notNull(),
+  },
+  (table) => [
+    unique("published_project_media_project_media_unique").on(
+      table.projectId,
+      table.mediaId,
+    ),
+    unique("published_project_media_project_position_unique").on(
+      table.projectId,
+      table.position,
+    ),
+    uniqueIndex("published_project_media_one_cover_per_project")
+      .on(table.projectId)
+      .where(sql`${table.isCover}`),
+    check(
+      "published_project_media_position_positive",
+      sql`${table.position} > 0`,
+    ),
+    check(
+      "published_project_media_alt_text_non_blank",
+      sql`btrim(${table.altText}) <> ''`,
+    ),
+  ],
+);
+
 export const projectOperations = pgTable(
   "project_operations",
   {
@@ -235,6 +379,9 @@ export const projectOperations = pgTable(
         onDelete: "restrict",
         onUpdate: "restrict",
       }),
+    contentSectionKey: contentSectionKeyEnum(
+      "content_section_key",
+    ).$type<ContentSectionKey>(),
     requestFingerprint: text("request_fingerprint").notNull(),
     status: projectOperationStatusEnum("status").default("pending").notNull(),
     outcomeCode: text("outcome_code"),
@@ -255,7 +402,7 @@ export const projectOperations = pgTable(
     ),
     check(
       "project_operations_target_matches_kind",
-      sql`(${table.kind} = 'save_project_draft' AND ${table.projectId} IS NOT NULL) OR (${table.kind} <> 'save_project_draft' AND ${table.projectId} IS NULL)`,
+      sql`(${table.kind}::text = 'save_project_draft' AND ${table.projectId} IS NOT NULL AND ${table.contentSectionKey} IS NULL) OR (${table.kind}::text = 'save_content_draft' AND ${table.projectId} IS NULL AND ${table.contentSectionKey} IS NOT NULL) OR (${table.kind}::text IN ('save_featured_draft', 'publish') AND ${table.projectId} IS NULL AND ${table.contentSectionKey} IS NULL)`,
     ),
     check(
       "project_operations_result_revision_positive",
@@ -272,6 +419,48 @@ export const projectOperations = pgTable(
   ],
 );
 
+export const contentSectionDrafts = pgTable(
+  "content_section_drafts",
+  {
+    sectionKey: contentSectionKeyEnum("section_key")
+      .$type<ContentSectionKey>()
+      .primaryKey(),
+    document: jsonb("document").$type<ContentDocument>().notNull(),
+    revision: bigint("revision", { mode: "bigint" })
+      .default(sql`1`)
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    check(
+      "content_section_drafts_revision_positive",
+      sql`${table.revision} > 0`,
+    ),
+    check(
+      "content_section_drafts_document_object",
+      sql`jsonb_typeof(${table.document}) = 'object'`,
+    ),
+  ],
+);
+
+export const publishedContentSections = pgTable(
+  "published_content_sections",
+  {
+    sectionKey: contentSectionKeyEnum("section_key")
+      .$type<ContentSectionKey>()
+      .primaryKey(),
+    document: jsonb("document").$type<ContentDocument>().notNull(),
+  },
+  (table) => [
+    check(
+      "published_content_sections_document_object",
+      sql`jsonb_typeof(${table.document}) = 'object'`,
+    ),
+  ],
+);
+
 export const publishedState = pgTable(
   "published_state",
   {
@@ -283,32 +472,35 @@ export const publishedState = pgTable(
         onDelete: "restrict",
         onUpdate: "restrict",
       }),
-    slot1ProjectId: uuid("slot_1_project_id")
-      .$type<ProjectId>()
-      .notNull()
-      .references(() => publishedProjects.projectId, {
-        onDelete: "restrict",
-        onUpdate: "restrict",
-      }),
-    slot2ProjectId: uuid("slot_2_project_id")
-      .$type<ProjectId>()
-      .notNull()
-      .references(() => publishedProjects.projectId, {
-        onDelete: "restrict",
-        onUpdate: "restrict",
-      }),
-    slot3ProjectId: uuid("slot_3_project_id")
-      .$type<ProjectId>()
-      .notNull()
-      .references(() => publishedProjects.projectId, {
-        onDelete: "restrict",
-        onUpdate: "restrict",
-      }),
+    slot1ProjectId: uuid("slot_1_project_id").$type<ProjectId>().notNull(),
+    slot2ProjectId: uuid("slot_2_project_id").$type<ProjectId>().notNull(),
+    slot3ProjectId: uuid("slot_3_project_id").$type<ProjectId>().notNull(),
     publishedAt: timestamp("published_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
   (table) => [
+    foreignKey({
+      name: "published_state_featured_slot_1_project_fk",
+      columns: [table.slot1ProjectId],
+      foreignColumns: [publishedProjects.projectId],
+    })
+      .onDelete("restrict")
+      .onUpdate("restrict"),
+    foreignKey({
+      name: "published_state_featured_slot_2_project_fk",
+      columns: [table.slot2ProjectId],
+      foreignColumns: [publishedProjects.projectId],
+    })
+      .onDelete("restrict")
+      .onUpdate("restrict"),
+    foreignKey({
+      name: "published_state_featured_slot_3_project_fk",
+      columns: [table.slot3ProjectId],
+      foreignColumns: [publishedProjects.projectId],
+    })
+      .onDelete("restrict")
+      .onUpdate("restrict"),
     check("published_state_singleton", sql`${table.singletonId} = 1`),
     check(
       "published_state_snapshot_revision_positive",
