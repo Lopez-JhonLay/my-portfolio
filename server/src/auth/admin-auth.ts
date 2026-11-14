@@ -23,6 +23,7 @@ export type AdminAuthConfig = {
   readonly adminUserId: string;
   readonly githubCallbackUrl: string;
   readonly githubClientId: string;
+  readonly secureCookies?: boolean;
   readonly sessionTtlMs: number;
 };
 
@@ -68,12 +69,21 @@ function readCookie(cookieHeader: string | undefined, name: string) {
   return null;
 }
 
-function sessionCookie(sessionId: string, maxAgeSeconds: number): string {
-  return `${SESSION_COOKIE}=${encodeURIComponent(sessionId)}; Path=/api; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}`;
+function sessionCookie(
+  sessionId: string,
+  maxAgeSeconds: number,
+  secure: boolean,
+): string {
+  const sameSite = secure ? "None" : "Lax";
+  return `${SESSION_COOKIE}=${encodeURIComponent(sessionId)}; Path=/api; HttpOnly; SameSite=${sameSite}${secure ? "; Secure" : ""}; Max-Age=${maxAgeSeconds}`;
 }
 
-function oauthStateCookie(state: string, maxAgeSeconds: number): string {
-  return `${OAUTH_STATE_COOKIE}=${encodeURIComponent(state)}; Path=/api/auth/github; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}`;
+function oauthStateCookie(
+  state: string,
+  maxAgeSeconds: number,
+  secure: boolean,
+): string {
+  return `${OAUTH_STATE_COOKIE}=${encodeURIComponent(state)}; Path=/api/auth/github; HttpOnly; SameSite=Lax${secure ? "; Secure" : ""}; Max-Age=${maxAgeSeconds}`;
 }
 
 export class AdminSessionStore {
@@ -210,6 +220,7 @@ export function createAdminAuth(options: {
   readonly now?: () => number;
 }) {
   const now = options.now ?? Date.now;
+  const secureCookies = options.config.secureCookies ?? false;
   const sessions = new AdminSessionStore(options.config.sessionTtlMs, now);
   const oauthStates = new Map<string, number>();
   const router = Router();
@@ -277,7 +288,7 @@ export function createAdminAuth(options: {
 
     response.setHeader(
       "Set-Cookie",
-      oauthStateCookie(state, OAUTH_STATE_TTL_MS / 1_000),
+      oauthStateCookie(state, OAUTH_STATE_TTL_MS / 1_000, secureCookies),
     );
     response.redirect(authorizationUrl.toString());
   });
@@ -318,8 +329,12 @@ export function createAdminAuth(options: {
 
     const session = sessions.create(identity.userId);
     response.setHeader("Set-Cookie", [
-      oauthStateCookie("", 0),
-      sessionCookie(session.sessionId, options.config.sessionTtlMs / 1_000),
+      oauthStateCookie("", 0, secureCookies),
+      sessionCookie(
+        session.sessionId,
+        options.config.sessionTtlMs / 1_000,
+        secureCookies,
+      ),
     ]);
     response.redirect(options.config.adminOrigin);
   });
@@ -341,7 +356,7 @@ export function createAdminAuth(options: {
   router.post("/logout", requireAdmin, requireCsrf, (request, response) => {
     const sessionId = readCookie(request.header("Cookie"), SESSION_COOKIE);
     if (sessionId !== null) sessions.delete(sessionId);
-    response.setHeader("Set-Cookie", sessionCookie("", 0));
+    response.setHeader("Set-Cookie", sessionCookie("", 0, secureCookies));
     response.status(204).end();
   });
 

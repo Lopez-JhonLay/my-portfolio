@@ -20,6 +20,7 @@ Complete management of all meaningful public portfolio content through the Admin
 - [x] Complete Stage 4 public integration for status, grouped and featured reads, first-publication fallback, loading/error/Retry states, CORS, caching, and draft isolation. Verification: 138 automated tests and all six manual browser checks passed.
 - [x] Complete Neon connectivity and the initial schema milestone. End-to-end smoke verification passed for GitHub login, persisted Project drafts, Featured selection, Publish Updates, and local public portfolio reads; the link-readiness requirement was also confirmed.
 - [x] Audit the current public content and approve the full-content CMS plan, including global publication, content ownership, private media, Project galleries, and built-in technology icons.
+- [x] Replace the three Neon test Projects with the six audited portfolio Projects, publish the first three personal Projects as Featured, remove the five test screenshot records and objects, and preserve the published profile, résumé, and content sections.
 
 ## In progress
 
@@ -33,7 +34,7 @@ Complete management of all meaningful public portfolio content through the Admin
 4. [x] **Neon media, résumé, and Project galleries:** implementation, approved dependencies, Neon migration, Object Storage configuration, real upload/private preview, contextual profile and résumé workflows, five-image gallery ordering/cover/alt text, draft isolation, publication, and public rendering passed owner acceptance.
 5. [x] **Full browser verification:** owner-verified public/Admin behavior, draft secrecy, publication, media workflows, accessibility, keyboard/focus, themes, reduced motion, and responsive layouts at approximately 320, 768, 1024, and 1440 px.
 6. [ ] Complete Admin lifecycle actions for include/unpublish, Trash, and Restore when required for publication safety (`CMS-DEC-PROJ-002–004`).
-7. [ ] After all content slices pass acceptance, prepare owner-approved backup/restore rehearsal, migration cutover and rollback, production hardening, zero-cost hosting checks, Render/Vercel deployment, and the deployment runbook.
+7. [ ] Complete Render/Vercel deployment after the verified production-origin, secure-cookie, Render-binding, and Admin SPA-routing readiness patch is committed and merged; provider configuration, credentials, and deployment remain separately owner-gated.
 
 ## Deferred
 
@@ -68,4 +69,5 @@ Complete management of all meaningful public portfolio content through the Admin
 - [ ] For each approved slice: run focused tests plus Admin/server/public lint, typecheck, format check, and builds affected by that slice.
 - [x] For Slice 1 persistence/publication changes: run `npm run test:integration --workspace @portfolio-cms/server` only against an explicitly approved isolated PostgreSQL test target and confirm cleanup.
 - [x] Full-content manual acceptance: public/Admin routes, draft secrecy, publication, media behavior, keyboard/focus, themes, reduced motion, and responsive layouts passed owner verification.
+- [x] Deployment-readiness patch: HTTPS origins, Render `0.0.0.0` binding, secure cross-site Admin session cookies, and Admin SPA rewrites passed the full 190-test quality gate and all three production builds.
 - [ ] Deferred enhancement: add Playwright public/Admin/preview regression coverage only after separate owner approval.

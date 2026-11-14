@@ -19,6 +19,7 @@ describe("validateEnvironment", () => {
         host: "127.0.0.1",
         port: 3000,
         publicOrigin: environment.PUBLIC_ORIGIN,
+        secureCookies: false,
         sessionTtlMs: 28_800_000,
       },
     });
@@ -40,6 +41,7 @@ describe("validateEnvironment", () => {
         host: "127.0.0.1",
         port: Number(port),
         publicOrigin: "http://127.0.0.1:5173",
+        secureCookies: false,
         sessionTtlMs: 28_800_000,
       },
     });
@@ -76,12 +78,36 @@ describe("validateEnvironment", () => {
     });
   });
 
+  it("accepts HTTPS application origins and Render binding", () => {
+    expect(
+      validateEnvironment(
+        createEnvironmentFixture({
+          ADMIN_ORIGIN: "https://portfolio-admin.vercel.app",
+          GITHUB_CALLBACK_URL:
+            "https://portfolio-api.onrender.com/api/auth/github/callback",
+          HOST: "0.0.0.0",
+          PUBLIC_ORIGIN: "https://portfolio.example.com",
+        }),
+      ),
+    ).toMatchObject({
+      success: true,
+      data: {
+        adminOrigin: "https://portfolio-admin.vercel.app",
+        githubCallbackUrl:
+          "https://portfolio-api.onrender.com/api/auth/github/callback",
+        host: "0.0.0.0",
+        publicOrigin: "https://portfolio.example.com",
+        secureCookies: true,
+      },
+    });
+  });
+
   it.each([
-    ["ADMIN_ORIGIN", "https://admin.example.com"],
+    ["ADMIN_ORIGIN", "http://admin.example.com"],
     ["DATABASE_URL", "postgresql://user:password@database.example.com/cms"],
-    ["GITHUB_CALLBACK_URL", "https://api.example.com/api/auth/github/callback"],
-    ["PUBLIC_ORIGIN", "https://portfolio.example.com"],
-  ] as const)("rejects non-local %s", (field, value) => {
+    ["GITHUB_CALLBACK_URL", "http://api.example.com/api/auth/github/callback"],
+    ["PUBLIC_ORIGIN", "http://portfolio.example.com"],
+  ] as const)("rejects an insecure or unsupported %s", (field, value) => {
     const result = validateEnvironment(
       createEnvironmentFixture({ [field]: value }),
     );
@@ -122,7 +148,7 @@ describe("validateEnvironment", () => {
     expect(JSON.stringify(result)).not.toContain(databaseUrl);
   });
 
-  it.each(["localhost", "0.0.0.0", "::1", ""])(
+  it.each(["localhost", "::1", "public.example", ""])(
     "rejects unsafe host %j without returning its value",
     (host) => {
       const result = validateEnvironment(
