@@ -50,7 +50,7 @@ export function Skills({ content, loading = false }) {
       </h2>
       <p className="section-lead">{content.lead}</p>
 
-      {loading ? <TechnologiesBodySkeleton /> : <div className="arsenal-grid">
+      {loading ? <TechnologiesBodySkeleton /> : <div className="arsenal-grid content-reveal">
         {content.groups.map((group) => (
           <article className="weapon-card" key={group.category}>
             <h3>{group.category}</h3>

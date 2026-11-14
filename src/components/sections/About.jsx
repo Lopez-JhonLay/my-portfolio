@@ -73,7 +73,7 @@ export function About({ content, identity, loading = false, profilePhotoUrl = pr
       </h2>
       <p className="section-lead">{content.lead}</p>
 
-      {loading ? <AboutBodySkeleton /> : <div className="dossier">
+      {loading ? <AboutBodySkeleton /> : <div className="dossier content-reveal">
         <span className="dossier-stamp type">{content.stamp}</span>
         <aside className="dossier-photo-panel" aria-label="Profile photo">
           <div className="photo-web-stage">

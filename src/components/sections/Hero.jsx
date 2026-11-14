@@ -2,7 +2,7 @@ import { FileText } from "lucide-react";
 import { motion } from "framer-motion";
 import { profile } from "@/data/portfolio";
 import PropTypes from "prop-types";
-import { HeroBodySkeleton } from "@/components/sections/content-skeletons";
+import { HeroSkeleton } from "@/components/sections/content-skeletons";
 
 const WEB_HUB = { x: 930, y: 315 };
 const WEB_ANCHORS = [
@@ -83,11 +83,11 @@ export function Hero({ content, loading = false, resumeUrl = profile.portfolioUr
       >
         <div className="noir-hero-copy">
           <span className="case-tag type">{content.sectionTag}</span>
-          <h1>{content.title}</h1>
           {loading ? (
-            <HeroBodySkeleton />
+            <HeroSkeleton />
           ) : (
-            <>
+            <div className="content-reveal">
+              <h1>{content.title}</h1>
               <p className="role">{content.heroRole}</p>
               <p className="tag">{content.description}</p>
 
@@ -97,7 +97,7 @@ export function Hero({ content, loading = false, resumeUrl = profile.portfolioUr
                   {content.resumeButtonLabel}
                 </a>
               </div>
-            </>
+            </div>
           )}
         </div>
       </motion.div>

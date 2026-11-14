@@ -20,7 +20,7 @@ export function Experience({ content, loading = false }) {
       </h2>
       <p className="section-lead">{content.lead}</p>
 
-      {loading ? <TimelineBodySkeleton /> : <div className="timeline">
+      {loading ? <TimelineBodySkeleton /> : <div className="timeline content-reveal">
         {content.entries.map((item) => (
           <article className="timeline-item" key={`${item.role}-${item.date}`}>
             <div className="timeline-marker" aria-hidden="true" />

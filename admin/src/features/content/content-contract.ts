@@ -28,6 +28,7 @@ export type EditableContentSectionKey =
   (typeof EDITABLE_CONTENT_SECTION_KEYS)[number];
 
 export type HeroDocument = {
+  title: string;
   name: string;
   role: string;
   heroRole: string;

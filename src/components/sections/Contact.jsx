@@ -27,7 +27,7 @@ export function Contact({ content, loading = false, location }) {
       </h2>
       <p className="section-lead">{content.availability}</p>
 
-      {loading ? <ContactBodySkeleton /> : <div className="contact-wrap">
+      {loading ? <ContactBodySkeleton /> : <div className="contact-wrap content-reveal">
         <div className="contact-note">
           <h3>{content.noteTitle}</h3>
           <p>{content.noteBody}</p>

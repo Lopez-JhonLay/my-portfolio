@@ -31,6 +31,20 @@ test('rejects unsafe or malformed published content', () => {
   }));
 });
 
+test('accepts an optional published Hero headline', () => {
+  const withTitle = { ...hero, title: 'Web and Mobile Software' };
+  const result = parsePublicContentSnapshot({
+    status: 'published', snapshotRevision: '2', featuredProjects: {}, projectGroups: [],
+    sections: [{ sectionKey: 'hero', document: withTitle }],
+  });
+  assert.deepEqual(result.sections.hero, withTitle);
+
+  assert.throws(() => parsePublicContentSnapshot({
+    status: 'published', snapshotRevision: '2', featuredProjects: {}, projectGroups: [],
+    sections: [{ sectionKey: 'hero', document: { ...hero, title: '' } }],
+  }));
+});
+
 test('returns no replacements before first publication', () => {
   assert.deepEqual(parsePublicContentSnapshot({ status: 'never-published', sections: [] }), {
     status: 'never-published', sections: {},

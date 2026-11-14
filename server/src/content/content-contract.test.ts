@@ -96,6 +96,20 @@ describe("content contracts", () => {
     ).toEqual(documents.about);
   });
 
+  it("keeps an optional Hero headline", () => {
+    const withTitle = {
+      ...documents.hero,
+      title: "Web and Mobile Software That Moves Businesses Forward",
+    };
+    expect(parseContentDocument("hero", withTitle)).toEqual(withTitle);
+    expect(parseContentDocument("hero", documents.hero)).toEqual(
+      documents.hero,
+    );
+    expect(() =>
+      parseContentDocument("hero", { ...documents.hero, title: "" }),
+    ).toThrow();
+  });
+
   it("rejects unsafe links and duplicate ordered values", () => {
     expect(() =>
       parseContentDocument("contact", {

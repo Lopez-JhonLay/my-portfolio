@@ -48,6 +48,18 @@ export function HeroFields({
   return (
     <>
       <section className="content-form-section">
+        <h2>Headline</h2>
+        <div className="content-field-grid content-field-grid--single">
+          <Field label="Headline" error={errors.title}>
+            <Input
+              maxLength={160}
+              value={document.title}
+              onChange={text("title")}
+            />
+          </Field>
+        </div>
+      </section>
+      <section className="content-form-section">
         <h2>Personal information</h2>
         <div className="content-field-grid">
           <Field label="Name" error={errors.name}>

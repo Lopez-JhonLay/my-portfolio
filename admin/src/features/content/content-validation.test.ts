@@ -9,6 +9,7 @@ import type {
 import { validateEditableContent } from "./content-validation.ts";
 
 const hero: HeroDocument = {
+  title: " Web and Mobile Software ",
   name: " Jhon ",
   role: " Developer ",
   heroRole: " Engineer ",
@@ -20,6 +21,16 @@ void test("normalizes a valid Hero document", () => {
   const result = validateEditableContent("hero", hero);
   assert.deepEqual(result.errors, {});
   assert.equal((result.document as HeroDocument).name, "Jhon");
+  assert.equal(
+    (result.document as HeroDocument).title,
+    "Web and Mobile Software",
+  );
+});
+
+void test("requires a Hero headline", () => {
+  const result = validateEditableContent("hero", { ...hero, title: " " });
+  assert.equal(result.document, undefined);
+  assert.equal(result.errors.title, "This field is required.");
 });
 
 void test("reports required personal-information validation errors", () => {
