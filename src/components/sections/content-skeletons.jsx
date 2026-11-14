@@ -19,7 +19,10 @@ export function HeroSkeleton() {
       <span className="skeleton-block skeleton-role" aria-hidden="true" />
       <span className="skeleton-block skeleton-copy" aria-hidden="true" />
       <span className="skeleton-block skeleton-copy skeleton-copy-short" aria-hidden="true" />
-      <span className="skeleton-block skeleton-button" aria-hidden="true" />
+      <div className="skeleton-cta" aria-hidden="true">
+        <span className="skeleton-block skeleton-button" />
+        <span className="skeleton-block skeleton-button" />
+      </div>
     </div>
   );
 }

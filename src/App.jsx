@@ -9,6 +9,7 @@ import { Skills } from "@/components/sections/Skills";
 import { Contact } from "@/components/sections/Contact";
 import { ContentLoadNotice } from "@/components/sections/ContentLoadNotice";
 import { AllProjects } from "@/components/pages/AllProjects";
+import { ProjectDetailSkeleton } from "@/components/projects/project-load-state";
 import { Route, Routes } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
 import PropTypes from "prop-types";
@@ -93,7 +94,7 @@ function App() {
         <Route
           path="/projects/:slug"
           element={
-            <Suspense fallback={<main className="project-detail"><p>Loading Project…</p></main>}>
+            <Suspense fallback={<ProjectDetailSkeleton />}>
               <ProjectDetail />
             </Suspense>
           }

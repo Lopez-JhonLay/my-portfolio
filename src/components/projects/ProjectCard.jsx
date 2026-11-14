@@ -1,9 +1,11 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 
 export function ProjectCard({ project }) {
+  const externalUrl = project.liveUrl || project.repo;
+
   return (
     <motion.article
       className="case-card"
@@ -18,34 +20,59 @@ export function ProjectCard({ project }) {
           alt={project.cover.altText}
         />
       ) : null}
-      <div className="num type">{project.number}</div>
-      <h3>{project.name}</h3>
-      <p className="case-category type">{project.category}</p>
-      <p>{project.description}</p>
-      {project.role ? (
-        <p className="case-role">
-          <span className="type">Role</span> {project.role}
+
+      <header className="case-head">
+        <p className="case-meta type">
+          <span>{project.number}</span>
+          <span aria-hidden="true">·</span>
+          <span>{project.category}</span>
         </p>
-      ) : null}
-      <div className="tagset">
-        {project.tech.map((tech) => (
-          <span key={tech}>{tech}</span>
-        ))}
+        <h3 title={project.name}>{project.name}</h3>
+      </header>
+
+      <div className="case-body">
+        <p className="case-description" title={project.description}>
+          {project.description}
+        </p>
+        {project.role ? (
+          <p className="case-role">
+            <span className="type">Role</span> {project.role}
+          </p>
+        ) : null}
       </div>
-      <a
-        className="case-link"
-        href={project.liveUrl || project.repo}
-        target="_blank"
-        rel="noreferrer"
-      >
-        {project.liveUrl ? "View Live Site" : "View Repository"}
-        <ArrowRight />
-      </a>
-      {project.slug ? (
-        <Link className="case-link" to={`/projects/${project.slug}`}>
-          View details
-          <ArrowRight />
-        </Link>
+
+      <div className="case-tech">
+        <span className="case-section-label type">Tech stack</span>
+        <div className="tagset">
+          {project.tech.map((tech) => (
+            <span key={tech}>{tech}</span>
+          ))}
+        </div>
+      </div>
+
+      {externalUrl || project.slug ? (
+        <footer className="case-actions">
+          {externalUrl ? (
+            <a
+              className="noir-button noir-button-solid"
+              href={externalUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {project.liveUrl ? "View Live Site" : "View Repository"}
+              <ExternalLink />
+            </a>
+          ) : null}
+          {project.slug ? (
+            <Link
+              className="noir-button noir-button-ghost"
+              to={`/projects/${project.slug}`}
+            >
+              View Details
+              <ArrowRight />
+            </Link>
+          ) : null}
+        </footer>
       ) : null}
     </motion.article>
   );

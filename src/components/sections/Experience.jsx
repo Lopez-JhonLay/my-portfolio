@@ -24,13 +24,15 @@ export function Experience({ content, loading = false }) {
         {content.entries.map((item) => (
           <article className="timeline-item" key={`${item.role}-${item.date}`}>
             <div className="timeline-marker" aria-hidden="true" />
-            <div>
-              <div className="timeline-date type">{item.date}</div>
-              <h3>{item.role}</h3>
+            <div className="timeline-body">
+              <div className="timeline-head">
+                <h3>{item.role}</h3>
+                <div className="timeline-date type">{item.date}</div>
+              </div>
               <p className="timeline-org">
                 {item.organization} - {item.location}
               </p>
-              <p>{item.detail}</p>
+              <p className="timeline-detail">{item.detail}</p>
             </div>
           </article>
         ))}

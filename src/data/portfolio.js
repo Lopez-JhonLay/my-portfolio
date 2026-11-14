@@ -35,6 +35,7 @@ export const heroContent = {
   title: profile.heroTitle,
   description: profile.heroTag,
   resumeButtonLabel: 'Download Resume',
+  contactButtonLabel: "Let's Talk",
   scrollCue: 'Descend',
 };
 

@@ -1,17 +1,41 @@
 import { Menu, X } from "lucide-react";
-import { FaSpider } from "react-icons/fa";
 import { useState } from "react";
+import { motion, useReducedMotion, useScroll, useSpring } from "framer-motion";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
+import { BrandLogo } from "@/components/layout/brand-logo";
 import PropTypes from "prop-types";
+
+/** Thin bar along the navbar's bottom edge that fills as the page scrolls. */
+function ScrollProgress() {
+  const { scrollYProgress } = useScroll();
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 220,
+    damping: 32,
+    restDelta: 0.001,
+  });
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <motion.div
+      className="scroll-progress"
+      style={{ scaleX: reduceMotion ? scrollYProgress : smoothProgress }}
+      aria-hidden="true"
+    />
+  );
+}
 
 export function Navbar({ brand, navigation }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <header className="noir-nav">
-      <a className="noir-brand" href="/#home" onClick={() => setIsOpen(false)}>
-        <FaSpider aria-hidden="true" />
-        <span>{brand}</span>
+      <a
+        className="noir-brand"
+        href="/#home"
+        aria-label={`${brand} - Home`}
+        onClick={() => setIsOpen(false)}
+      >
+        <BrandLogo className="noir-brand-logo" />
       </a>
 
       <nav className="noir-desktop-nav" aria-label="Primary navigation">
@@ -48,6 +72,8 @@ export function Navbar({ brand, navigation }) {
           ))}
         </nav>
       ) : null}
+
+      <ScrollProgress />
     </header>
   );
 }
