@@ -41,11 +41,11 @@ void test("allows publishing when there are no known local blockers", () => {
   assert.deepEqual(result.blockers, []);
 });
 
-void test("reports unsaved, unresolved, loading, and invalid Featured blockers", () => {
+void test("reports unsaved, unresolved, and invalid Featured blockers with fixes", () => {
   const result = getPublicationReadiness({
     featuredDirty: true,
     featuredPending: true,
-    isLoading: true,
+    isLoading: false,
     projectDirty: true,
     projectPending: true,
     projects: projects.slice(0, 2),
@@ -54,7 +54,32 @@ void test("reports unsaved, unresolved, loading, and invalid Featured blockers",
   });
 
   assert.equal(result.ready, false);
-  assert.equal(result.blockers.length, 7);
-  assert.ok(result.blockers.some((blocker) => /Project edits/i.test(blocker)));
-  assert.ok(result.blockers.some((blocker) => /saved Featured/i.test(blocker)));
+  assert.equal(result.blockers.length, 6);
+  const projectEdits = result.blockers.find((blocker) =>
+    /unsaved project edits/i.test(blocker.message),
+  );
+  assert.equal(projectEdits?.fix?.to, "/projects");
+  const featured = result.blockers.find((blocker) =>
+    /Pick 3/i.test(blocker.message),
+  );
+  assert.equal(featured?.fix?.to, "/featured");
+});
+
+void test("waits for data before judging the Featured selection", () => {
+  const result = getPublicationReadiness({
+    featuredDirty: false,
+    featuredPending: false,
+    isLoading: true,
+    projectDirty: false,
+    projectPending: false,
+    projects: [],
+    publicationPending: false,
+    savedSlots,
+  });
+
+  assert.equal(result.ready, false);
+  assert.deepEqual(
+    result.blockers.map((blocker) => blocker.message),
+    ["Your projects are still loading."],
+  );
 });

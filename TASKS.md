@@ -24,7 +24,7 @@ Complete management of all meaningful public portfolio content through the Admin
 
 ## In progress
 
-- Full portfolio content management and manual browser acceptance are complete. Protected draft-preview routes and automated Playwright browser coverage are deferred enhancements by owner decision.
+- Full portfolio content management, production deployment, and authentication smoke checks are complete. The redesigned Overview dashboard is implemented and awaiting owner visual acceptance before any separately authorized Git commit or deployment.
 
 ## Next tasks (ordered by priority)
 
@@ -34,7 +34,8 @@ Complete management of all meaningful public portfolio content through the Admin
 4. [x] **Neon media, résumé, and Project galleries:** implementation, approved dependencies, Neon migration, Object Storage configuration, real upload/private preview, contextual profile and résumé workflows, five-image gallery ordering/cover/alt text, draft isolation, publication, and public rendering passed owner acceptance.
 5. [x] **Full browser verification:** owner-verified public/Admin behavior, draft secrecy, publication, media workflows, accessibility, keyboard/focus, themes, reduced motion, and responsive layouts at approximately 320, 768, 1024, and 1440 px.
 6. [ ] Complete Admin lifecycle actions for include/unpublish, Trash, and Restore when required for publication safety (`CMS-DEC-PROJ-002–004`).
-7. [ ] Complete Render/Vercel deployment after the verified production-origin, secure-cookie, Render-binding, and Admin SPA-routing readiness patch is committed and merged; provider configuration, credentials, and deployment remain separately owner-gated.
+7. [x] Complete the authorized Render API and Vercel public/Admin deployment, production origins, secure cross-site sessions, separate production GitHub OAuth application, and live smoke verification.
+8. [ ] Complete owner visual acceptance of the focused Overview dashboard redesign; Git staging, commit, push, and redeployment remain separately gated.
 
 ## Deferred
 
@@ -50,7 +51,7 @@ Complete management of all meaningful public portfolio content through the Admin
 - Further Neon schema/data changes remain separately owner-gated. Slice 1 migration `0001_sturdy_nick_fury` was explicitly authorized, applied transactionally, and verified with seven valid draft sections and zero published content sections.
 - Slice 4 SDK/file-signature dependencies were explicitly approved and installed, migration `0002_media-assets-galleries` was explicitly authorized and applied, and the existing private `uploads` bucket was explicitly authorized and configured. One non-sensitive image upload was explicitly authorized and verified; further uploads or media-reference changes remain owner-gated.
 - Playwright setup or dependency changes remain separately gated and owner-deferred.
-- Production work remains gated on credentials, provider/cost validation, backup and restore approval/rehearsal, migration/cutover/rollback approval, complete test acceptance, and separate database/infrastructure/deployment authorization.
+- Future production changes, backup/restore rehearsal, database operations, infrastructure changes, and deployments remain separately owner-gated.
 
 ## Minimal verification checklist
 
@@ -70,4 +71,5 @@ Complete management of all meaningful public portfolio content through the Admin
 - [x] For Slice 1 persistence/publication changes: run `npm run test:integration --workspace @portfolio-cms/server` only against an explicitly approved isolated PostgreSQL test target and confirm cleanup.
 - [x] Full-content manual acceptance: public/Admin routes, draft secrecy, publication, media behavior, keyboard/focus, themes, reduced motion, and responsive layouts passed owner verification.
 - [x] Deployment-readiness patch: HTTPS origins, Render `0.0.0.0` binding, secure cross-site Admin session cookies, and Admin SPA rewrites passed the full 190-test quality gate and all three production builds.
+- [x] Overview dashboard implementation: 37 Admin tests passed, including three focused status-model tests; Admin lint, typecheck, formatting, and production build passed. Owner visual acceptance remains pending.
 - [ ] Deferred enhancement: add Playwright public/Admin/preview regression coverage only after separate owner approval.

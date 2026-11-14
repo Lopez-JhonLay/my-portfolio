@@ -11,7 +11,13 @@ const OAUTH_STATE_COOKIE = "portfolio_cms_oauth_state";
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1_000;
 const GITHUB_OAUTH_ISSUER = "https://github.com/login/oauth";
 const githubTokenSchema = z.object({ access_token: z.string().min(1) });
-const githubUserSchema = z.object({ id: z.number().int().positive() });
+const GITHUB_AVATAR_HOST = "avatars.githubusercontent.com";
+const githubUserSchema = z.object({
+  id: z.number().int().positive(),
+  login: z.string().min(1).max(100).optional(),
+  name: z.string().max(255).nullish(),
+  avatar_url: z.string().nullish(),
+});
 const oauthCallbackSchema = z.strictObject({
   code: z.string().min(1).max(512),
   iss: z.literal(GITHUB_OAUTH_ISSUER).optional(),
@@ -27,16 +33,43 @@ export type AdminAuthConfig = {
   readonly sessionTtlMs: number;
 };
 
+/**
+ * Display-only GitHub profile shown in the Admin chrome. It is never used for
+ * authorization, which relies solely on the stable numeric GitHub user ID.
+ */
+export type AdminProfile = {
+  readonly avatarUrl: string | null;
+  readonly login: string;
+  readonly name: string | null;
+};
+
 export type GitHubOAuthClient = {
-  exchangeCode(code: string): Promise<{ readonly userId: string }>;
+  exchangeCode(code: string): Promise<{
+    readonly profile?: AdminProfile;
+    readonly userId: string;
+  }>;
 };
 
 type AdminSession = {
   readonly csrfToken: string;
   readonly expiresAt: number;
   readonly githubUserId: string;
+  readonly profile: AdminProfile | null;
   readonly sessionId: string;
 };
+
+/** Accept only HTTPS avatars served from GitHub's avatar host. */
+function safeAvatarUrl(value: string | null | undefined): string | null {
+  if (typeof value !== "string") return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.hostname === GITHUB_AVATAR_HOST
+      ? url.toString()
+      : null;
+  } catch {
+    return null;
+  }
+}
 
 function opaqueToken(): string {
   return randomBytes(32).toString("base64url");
@@ -96,11 +129,12 @@ export class AdminSessionStore {
     this.#now = now;
   }
 
-  create(githubUserId: string): AdminSession {
+  create(githubUserId: string, profile?: AdminProfile): AdminSession {
     const session: AdminSession = {
       sessionId: opaqueToken(),
       csrfToken: opaqueToken(),
       githubUserId,
+      profile: profile ?? null,
       expiresAt: this.#now() + this.#sessionTtlMs,
     };
     this.#sessions.set(session.sessionId, session);
@@ -209,7 +243,20 @@ export function createGitHubOAuthClient(options: {
       if (!userResponse.ok) throw new Error("GitHub identity lookup failed");
       const user = githubUserSchema.parse(await userResponse.json());
 
-      return { userId: String(user.id) };
+      const name = user.name?.trim();
+
+      return {
+        userId: String(user.id),
+        ...(user.login === undefined
+          ? {}
+          : {
+              profile: {
+                avatarUrl: safeAvatarUrl(user.avatar_url),
+                login: user.login,
+                name: name ? name : null,
+              },
+            }),
+      };
     },
   };
 }
@@ -327,7 +374,7 @@ export function createAdminAuth(options: {
       });
     }
 
-    const session = sessions.create(identity.userId);
+    const session = sessions.create(identity.userId, identity.profile);
     response.setHeader("Set-Cookie", [
       oauthStateCookie("", 0, secureCookies),
       sessionCookie(
@@ -350,6 +397,7 @@ export function createAdminAuth(options: {
       authenticated: true,
       csrfToken: session.csrfToken,
       expiresAt: new Date(session.expiresAt).toISOString(),
+      ...(session.profile === null ? {} : { profile: session.profile }),
     });
   });
 

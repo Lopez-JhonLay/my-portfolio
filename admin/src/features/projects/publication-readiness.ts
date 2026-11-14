@@ -12,27 +12,58 @@ type PublicationReadinessInput = {
   readonly savedSlots: FeaturedDraft["slots"];
 };
 
+/** Something that must be resolved before publishing, with where to fix it. */
+export type PublicationBlocker = {
+  readonly message: string;
+  readonly fix?: { readonly label: string; readonly to: string };
+};
+
+const OPEN_PROJECTS = { label: "Open Projects", to: "/projects" } as const;
+const OPEN_FEATURED = { label: "Open Featured", to: "/featured" } as const;
+
 export function getPublicationReadiness(input: PublicationReadinessInput): {
-  readonly blockers: readonly string[];
+  readonly blockers: readonly PublicationBlocker[];
   readonly ready: boolean;
 } {
-  const blockers: string[] = [];
-  if (input.isLoading)
-    blockers.push("Project and Featured data is still loading.");
-  if (input.projectDirty)
-    blockers.push("Save or discard unsaved Project edits.");
-  if (input.featuredDirty)
-    blockers.push("Save or discard unsaved Featured changes.");
-  if (input.projectPending)
-    blockers.push("Resolve the outstanding Project draft save.");
-  if (input.featuredPending)
-    blockers.push("Resolve the outstanding Featured save.");
-  if (input.publicationPending)
-    blockers.push("Resolve the outstanding publication operation.");
-  if (!validateFeaturedSlots(input.savedSlots, input.projects).valid) {
-    blockers.push(
-      "The saved Featured selection must contain three eligible Projects.",
-    );
+  const blockers: PublicationBlocker[] = [];
+  if (input.isLoading) {
+    blockers.push({ message: "Your projects are still loading." });
+  }
+  if (input.projectDirty) {
+    blockers.push({
+      message: "You have unsaved project edits.",
+      fix: OPEN_PROJECTS,
+    });
+  }
+  if (input.featuredDirty) {
+    blockers.push({
+      message: "You have unsaved changes to your featured projects.",
+      fix: OPEN_FEATURED,
+    });
+  }
+  if (input.projectPending) {
+    blockers.push({
+      message: "A project save hasn't been confirmed yet.",
+      fix: OPEN_PROJECTS,
+    });
+  }
+  if (input.featuredPending) {
+    blockers.push({
+      message: "A featured projects save hasn't been confirmed yet.",
+      fix: OPEN_FEATURED,
+    });
+  }
+  if (input.publicationPending) {
+    blockers.push({ message: "Your last publish hasn't been confirmed yet." });
+  }
+  if (
+    !input.isLoading &&
+    !validateFeaturedSlots(input.savedSlots, input.projects).valid
+  ) {
+    blockers.push({
+      message: "Pick 3 visible projects to feature on your homepage.",
+      fix: { label: "Choose featured", to: "/featured" },
+    });
   }
   return { blockers, ready: blockers.length === 0 };
 }
