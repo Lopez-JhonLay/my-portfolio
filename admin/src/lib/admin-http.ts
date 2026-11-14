@@ -72,7 +72,7 @@ export class UncertainMutationError extends Error {
 export type AdminRequestOptions = {
   readonly body?: unknown;
   readonly csrfToken?: string;
-  readonly method?: "GET" | "POST" | "PUT";
+  readonly method?: "DELETE" | "GET" | "POST" | "PUT";
   readonly operationId?: string;
   readonly signal?: AbortSignal;
 };

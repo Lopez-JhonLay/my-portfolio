@@ -2,6 +2,7 @@ import { FileText } from "lucide-react";
 import { motion } from "framer-motion";
 import { profile } from "@/data/portfolio";
 import PropTypes from "prop-types";
+import { HeroBodySkeleton } from "@/components/sections/content-skeletons";
 
 const WEB_HUB = { x: 930, y: 315 };
 const WEB_ANCHORS = [
@@ -50,7 +51,7 @@ function createWebRing(scale) {
   return `${path} Z`;
 }
 
-export function Hero({ content }) {
+export function Hero({ content, loading = false, resumeUrl = profile.portfolioUrl }) {
   return (
     <section className="noir-hero" id="home">
       <svg
@@ -83,15 +84,21 @@ export function Hero({ content }) {
         <div className="noir-hero-copy">
           <span className="case-tag type">{content.sectionTag}</span>
           <h1>{content.title}</h1>
-          <p className="role">{content.heroRole}</p>
-          <p className="tag">{content.description}</p>
+          {loading ? (
+            <HeroBodySkeleton />
+          ) : (
+            <>
+              <p className="role">{content.heroRole}</p>
+              <p className="tag">{content.description}</p>
 
-          <div className="hero-cta">
-            <a className="noir-button noir-button-solid" href={profile.portfolioUrl} download>
-              <FileText />
-              {content.resumeButtonLabel}
-            </a>
-          </div>
+              <div className="hero-cta">
+                <a className="noir-button noir-button-solid" href={resumeUrl} download>
+                  <FileText />
+                  {content.resumeButtonLabel}
+                </a>
+              </div>
+            </>
+          )}
         </div>
       </motion.div>
 
@@ -109,4 +116,6 @@ Hero.propTypes = {
     sectionTag: PropTypes.string.isRequired,
     title: PropTypes.string.isRequired,
   }).isRequired,
+  loading: PropTypes.bool,
+  resumeUrl: PropTypes.string,
 };

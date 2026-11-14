@@ -4,19 +4,14 @@ import assert from 'node:assert/strict';
 import { parsePublicContentSnapshot } from './public-portfolio-client.js';
 
 const hero = {
-  browserTitle: 'Portfolio', name: 'Jhon', brand: 'JL', role: 'Developer',
-  heroRole: 'Developer', location: 'Pasay', sectionTag: 'Open File', title: 'Web',
-  description: 'Description', resumeButtonLabel: 'Download', scrollCue: 'Descend',
-  navigation: [
-    ['Home', '/#home'], ['About', '/#about'], ['Projects', '/#projects'],
-    ['Experience', '/#experience'], ['Skills', '/#skills'], ['Contact', '/#contact'],
-  ].map(([label, href]) => ({ label, href })),
+  name: 'Jhon', role: 'Developer', heroRole: 'Developer', location: 'Pasay',
+  description: 'Description',
 };
 
 test('uses only validated published content sections', () => {
   const result = parsePublicContentSnapshot({
     status: 'published', snapshotRevision: '2', featuredProjects: {}, projectGroups: [],
-    sections: [{ sectionKey: 'hero', document: hero }, { sectionKey: 'timeline', document: {} }],
+    sections: [{ sectionKey: 'hero', document: hero }, { sectionKey: 'projects-presentation', document: {} }],
   });
   assert.deepEqual(result, { status: 'published', sections: { hero } });
 });
@@ -24,7 +19,15 @@ test('uses only validated published content sections', () => {
 test('rejects unsafe or malformed published content', () => {
   assert.throws(() => parsePublicContentSnapshot({
     status: 'published', snapshotRevision: '2', featuredProjects: {}, projectGroups: [],
-    sections: [{ sectionKey: 'hero', document: { ...hero, navigation: [] } }],
+    sections: [{ sectionKey: 'hero', document: { ...hero, name: '' } }],
+  }));
+
+  assert.throws(() => parsePublicContentSnapshot({
+    status: 'published', snapshotRevision: '2', featuredProjects: {}, projectGroups: [],
+    sections: [{
+      sectionKey: 'media-resume',
+      document: { profileImageMediaId: '11111111-1111-1111-1111-111111111111', resumeMediaId: null },
+    }],
   }));
 });
 

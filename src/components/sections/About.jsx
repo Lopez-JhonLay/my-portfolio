@@ -1,7 +1,9 @@
 import { User } from "lucide-react";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import profilePhoto from "@/assets/profile.jpg";
 import PropTypes from "prop-types";
+import { AboutBodySkeleton } from "@/components/sections/content-skeletons";
 
 const PHOTO_WEB_HUB = { x: 360, y: 120 };
 const PHOTO_WEB_ANCHORS = [
@@ -48,7 +50,13 @@ function createPhotoWebRing(scale) {
   return `${path} Z`;
 }
 
-export function About({ content, identity }) {
+export function About({ content, identity, loading = false, profilePhotoUrl = profilePhoto }) {
+  const [resolvedProfilePhotoUrl, setResolvedProfilePhotoUrl] = useState(profilePhotoUrl);
+
+  useEffect(() => {
+    setResolvedProfilePhotoUrl(profilePhotoUrl);
+  }, [profilePhotoUrl]);
+
   return (
     <motion.section
       className="noir-section"
@@ -65,7 +73,7 @@ export function About({ content, identity }) {
       </h2>
       <p className="section-lead">{content.lead}</p>
 
-      <div className="dossier">
+      {loading ? <AboutBodySkeleton /> : <div className="dossier">
         <span className="dossier-stamp type">{content.stamp}</span>
         <aside className="dossier-photo-panel" aria-label="Profile photo">
           <div className="photo-web-stage">
@@ -93,7 +101,11 @@ export function About({ content, identity }) {
             <div className="photo-frame">
               <span className="tape tape-left" />
               <span className="tape tape-right" />
-              <img src={profilePhoto} alt={identity.name} />
+              <img
+                src={resolvedProfilePhotoUrl}
+                alt={identity.name}
+                onError={() => setResolvedProfilePhotoUrl(profilePhoto)}
+              />
             </div>
           </div>
           <p className="photo-caption type">{content.photoCaptionPrefix} {identity.location}</p>
@@ -115,7 +127,7 @@ export function About({ content, identity }) {
             </div>
           ))}
         </div>
-      </div>
+      </div>}
     </motion.section>
   );
 }
@@ -135,4 +147,6 @@ About.propTypes = {
     name: PropTypes.string.isRequired,
     role: PropTypes.string.isRequired,
   }).isRequired,
+  loading: PropTypes.bool,
+  profilePhotoUrl: PropTypes.string,
 };

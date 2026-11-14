@@ -8,25 +8,11 @@ import {
 } from "./content-client.ts";
 
 const hero = {
-  browserTitle: "Portfolio",
   name: "Jhon",
-  brand: "JL",
   role: "Software Engineer",
   heroRole: "Developer",
   location: "Pasay",
-  navigation: [
-    "home",
-    "about",
-    "projects",
-    "experience",
-    "skills",
-    "contact",
-  ].map((destination) => ({ label: destination, href: `/#${destination}` })),
-  sectionTag: "Open File",
-  title: "Web & Mobile",
   description: "Practical applications.",
-  resumeButtonLabel: "Download",
-  scrollCue: "Descend",
 };
 
 void test("parses content readiness without retaining draft documents", () => {

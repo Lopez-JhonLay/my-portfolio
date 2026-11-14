@@ -5,6 +5,7 @@ import { z } from "zod";
 import { ApplicationError } from "../middleware/application-error.ts";
 import {
   projectIdSchema,
+  projectGallerySchema,
   draftFeaturedSlotsSchema,
   projectLifecycleSchema,
   projectPublicationIntentSchema,
@@ -39,7 +40,10 @@ const paginationSchema = z.strictObject({
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().positive().max(100).default(20),
 });
-const createBodySchema = z.strictObject({ draft: projectVersionSchema });
+const createBodySchema = z.strictObject({
+  draft: projectVersionSchema,
+  gallery: projectGallerySchema.default([]),
+});
 const publishBodySchema = z.strictObject({});
 const saveBodySchema = z.strictObject({
   expectedRevision: z
@@ -47,6 +51,7 @@ const saveBodySchema = z.strictObject({
     .regex(/^[1-9][0-9]*$/)
     .transform((value) => BigInt(value)),
   draft: projectVersionSchema,
+  gallery: projectGallerySchema.default([]),
 });
 const featuredSaveBodySchema = z.strictObject({
   expectedRevision: z
@@ -61,6 +66,7 @@ const projectResponseSchema = z.strictObject({
   publicationIntent: projectPublicationIntentSchema,
   revision: z.string().regex(/^[1-9][0-9]*$/),
   draft: projectVersionSchema,
+  gallery: projectGallerySchema,
 });
 const operationKindSchema = z.enum([
   "save_project_draft",
@@ -72,6 +78,7 @@ const operationOutcomeSchema = z.enum([
   "featured_draft_saved",
   "stale_revision",
   "invalid_featured_reference",
+  "invalid_gallery_reference",
 ]);
 const operationResponseSchema = z.union([
   z.strictObject({
@@ -149,6 +156,7 @@ function projectDto(project: AdminProjectDraft) {
     publicationIntent: project.publicationIntent,
     revision: project.revision.toString(),
     draft: project.draft,
+    gallery: project.gallery ?? [],
   });
 }
 
@@ -208,6 +216,13 @@ async function mutationResponse(
     return { body: operationDto(result), status: 202 };
   }
   if (result.status === "failed") {
+    if (result.outcomeCode === "invalid_gallery_reference") {
+      throw new ApplicationError({
+        code: "VALIDATION_ERROR",
+        message: "The gallery must reference ready image media.",
+        status: 422,
+      });
+    }
     if (result.outcomeCode !== "stale_revision" || result.projectId === null) {
       throw new ApplicationError({
         code: "BAD_REQUEST",
@@ -352,6 +367,7 @@ export function createAdminProjectRouter(options: {
     const result = await options.mutationService.createProjectDraft({
       operationId: operationId(request.headers),
       draft: body.draft,
+      gallery: body.gallery,
     });
     const output = await mutationResponse(result, options.readRepository, 201);
     response.status(output.status).json(output.body);
@@ -368,6 +384,7 @@ export function createAdminProjectRouter(options: {
         projectId,
         expectedRevision: body.expectedRevision,
         draft: body.draft,
+        gallery: body.gallery,
       });
       const output = await mutationResponse(
         result,

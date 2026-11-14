@@ -300,6 +300,7 @@ describe("published Project read repository", () => {
     ).resolves.toEqual({
       status: "available",
       data: {
+        gallery: [],
         number: "File 01",
         name: "Project One",
         category: "Personal Project",

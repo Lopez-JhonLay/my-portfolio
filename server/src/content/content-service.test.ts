@@ -88,7 +88,7 @@ describe("content mutation service", () => {
       operationId: "11111111-1111-4111-8111-111111111111",
       sectionKey: "hero" as const,
       expectedRevision: 1n,
-      document: { ...HERO_DOCUMENT, title: "Updated title" },
+      document: { ...HERO_DOCUMENT, description: "Updated introduction" },
     };
 
     await expect(context.service.saveDraft(command)).resolves.toMatchObject({
@@ -101,7 +101,7 @@ describe("content mutation service", () => {
       resultRevision: 2n,
     });
     expect(context.getSection().document).toMatchObject({
-      title: "Updated title",
+      description: "Updated introduction",
     });
   });
 
@@ -114,7 +114,7 @@ describe("content mutation service", () => {
         operationId: "22222222-2222-4222-8222-222222222222",
         sectionKey: "hero",
         expectedRevision: 1n,
-        document: { ...HERO_DOCUMENT, title: "Must not save" },
+        document: { ...HERO_DOCUMENT, description: "Must not save" },
       }),
     ).resolves.toMatchObject({
       status: "failed",

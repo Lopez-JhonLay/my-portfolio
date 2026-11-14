@@ -5,16 +5,11 @@ import type {
   EditableContentDocument,
   EditableContentSectionKey,
   HeroDocument,
+  MediaResumeDocument,
+  TechnologiesDocument,
+  TimelineDocument,
 } from "./content-contract";
 
-const NAVIGATION_DESTINATIONS = [
-  "/#home",
-  "/#about",
-  "/#projects",
-  "/#experience",
-  "/#skills",
-  "/#contact",
-] as const;
 const SOCIAL_ICON_KEYS = [
   "facebook",
   "github",
@@ -47,40 +42,12 @@ function validateHero(
   document: HeroDocument,
   errors: Record<string, string>,
 ): HeroDocument {
-  const navigation = document.navigation.map((item, index) => ({
-    label: required(item.label, 80, `navigation.${index}.label`, errors),
-    href: item.href,
-  }));
-  if (
-    navigation.length !== 6 ||
-    new Set(navigation.map(({ href }) => href)).size !== 6 ||
-    navigation.some(
-      ({ href }) =>
-        !NAVIGATION_DESTINATIONS.includes(
-          href as (typeof NAVIGATION_DESTINATIONS)[number],
-        ),
-    )
-  ) {
-    errors.navigation = "Keep one label for each fixed portfolio destination.";
-  }
   return {
-    browserTitle: required(document.browserTitle, 120, "browserTitle", errors),
     name: required(document.name, 120, "name", errors),
-    brand: required(document.brand, 12, "brand", errors),
     role: required(document.role, 160, "role", errors),
     heroRole: required(document.heroRole, 120, "heroRole", errors),
     location: required(document.location, 160, "location", errors),
-    navigation,
-    sectionTag: required(document.sectionTag, 80, "sectionTag", errors),
-    title: required(document.title, 160, "title", errors),
     description: required(document.description, 2_000, "description", errors),
-    resumeButtonLabel: required(
-      document.resumeButtonLabel,
-      80,
-      "resumeButtonLabel",
-      errors,
-    ),
-    scrollCue: required(document.scrollCue, 80, "scrollCue", errors),
   };
 }
 
@@ -93,9 +60,6 @@ function validateAbout(
   if (document.facts.length < 1 || document.facts.length > 12)
     errors.facts = "Keep between 1 and 12 facts.";
   return {
-    eyebrow: required(document.eyebrow, 80, "eyebrow", errors),
-    title: required(document.title, 160, "title", errors),
-    lead: required(document.lead, 2_000, "lead", errors),
     paragraphs: document.paragraphs.map((paragraph, index) =>
       required(paragraph, 2_000, `paragraphs.${index}`, errors),
     ),
@@ -103,13 +67,6 @@ function validateAbout(
       label: required(fact.label, 80, `facts.${index}.label`, errors),
       value: required(fact.value, 240, `facts.${index}.value`, errors),
     })),
-    stamp: required(document.stamp, 80, "stamp", errors),
-    photoCaptionPrefix: required(
-      document.photoCaptionPrefix,
-      160,
-      "photoCaptionPrefix",
-      errors,
-    ),
   };
 }
 
@@ -123,15 +80,12 @@ function validateContact(
   if (document.socialLinks.length > 12)
     errors.socialLinks = "Keep 12 social links or fewer.";
   return {
-    eyebrow: required(document.eyebrow, 80, "eyebrow", errors),
-    title: required(document.title, 160, "title", errors),
     availability: required(
       document.availability,
       2_000,
       "availability",
       errors,
     ),
-    noteTitle: required(document.noteTitle, 160, "noteTitle", errors),
     noteBody: required(document.noteBody, 2_000, "noteBody", errors),
     email,
     socialLinks: document.socialLinks.map((link, index) => {
@@ -146,19 +100,79 @@ function validateContact(
         iconKey: link.iconKey,
       };
     }),
-    footerPrimary: required(
-      document.footerPrimary,
-      240,
-      "footerPrimary",
-      errors,
-    ),
-    footerSecondary: required(
-      document.footerSecondary,
-      240,
-      "footerSecondary",
-      errors,
-    ),
   };
+}
+
+function validateTimeline(
+  document: TimelineDocument,
+  errors: Record<string, string>,
+): TimelineDocument {
+  if (document.entries.length < 1 || document.entries.length > 30)
+    errors.entries = "Keep between 1 and 30 timeline entries.";
+  return {
+    entries: document.entries.map((entry, index) => ({
+      role: required(entry.role, 160, `entries.${index}.role`, errors),
+      organization: required(
+        entry.organization,
+        160,
+        `entries.${index}.organization`,
+        errors,
+      ),
+      location: required(
+        entry.location,
+        160,
+        `entries.${index}.location`,
+        errors,
+      ),
+      date: required(entry.date, 160, `entries.${index}.date`, errors),
+      detail: required(entry.detail, 2_000, `entries.${index}.detail`, errors),
+    })),
+  };
+}
+
+function validateTechnologies(
+  document: TechnologiesDocument,
+  errors: Record<string, string>,
+): TechnologiesDocument {
+  if (document.groups.length < 1 || document.groups.length > 20)
+    errors.groups = "Keep between 1 and 20 categories.";
+  const groups = document.groups.map((group, groupIndex) => {
+    if (group.technologies.length < 1 || group.technologies.length > 40)
+      errors[`groups.${groupIndex}.technologies`] =
+        "Keep between 1 and 40 technologies.";
+    const technologies = group.technologies.map(
+      (technology, technologyIndex) => ({
+        name: required(
+          technology.name,
+          120,
+          `groups.${groupIndex}.technologies.${technologyIndex}.name`,
+          errors,
+        ),
+        ...(technology.iconKey ? { iconKey: technology.iconKey } : {}),
+      }),
+    );
+    if (
+      new Set(technologies.map(({ name }) => name.toLowerCase())).size !==
+      technologies.length
+    )
+      errors[`groups.${groupIndex}.technologies`] =
+        "Technology names must be unique in this category.";
+    return {
+      category: required(
+        group.category,
+        120,
+        `groups.${groupIndex}.category`,
+        errors,
+      ),
+      technologies,
+    };
+  });
+  if (
+    new Set(groups.map(({ category }) => category.toLowerCase())).size !==
+    groups.length
+  )
+    errors.groups = "Category names must be unique.";
+  return { groups };
 }
 
 export function validateEditableContent(
@@ -174,7 +188,13 @@ export function validateEditableContent(
       ? validateHero(document as HeroDocument, errors)
       : sectionKey === "about"
         ? validateAbout(document as AboutDocument, errors)
-        : validateContact(document as ContactDocument, errors);
+        : sectionKey === "timeline"
+          ? validateTimeline(document as TimelineDocument, errors)
+          : sectionKey === "technologies"
+            ? validateTechnologies(document as TechnologiesDocument, errors)
+            : sectionKey === "media-resume"
+              ? (document as MediaResumeDocument)
+              : validateContact(document as ContactDocument, errors);
   return Object.keys(errors).length === 0
     ? { document: normalized, errors }
     : { errors };

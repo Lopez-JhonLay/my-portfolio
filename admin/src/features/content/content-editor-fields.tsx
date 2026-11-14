@@ -3,12 +3,16 @@ import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
+import { TECHNOLOGY_ICON_KEYS } from "./content-contract";
 import type {
   AboutDocument,
   ContactDocument,
   ContentFieldErrors,
   HeroDocument,
+  TechnologiesDocument,
+  TimelineDocument,
 } from "./content-contract";
+import { moveContentItem } from "./content-ordering";
 
 function Field({
   error,
@@ -44,48 +48,19 @@ export function HeroFields({
   return (
     <>
       <section className="content-form-section">
-        <h2>Identity and browser</h2>
+        <h2>Personal information</h2>
         <div className="content-field-grid">
-          <Field label="Browser title" error={errors.browserTitle}>
-            <Input
-              value={document.browserTitle}
-              onChange={text("browserTitle")}
-            />
-          </Field>
           <Field label="Name" error={errors.name}>
             <Input value={document.name} onChange={text("name")} />
-          </Field>
-          <Field label="Brand" error={errors.brand}>
-            <Input value={document.brand} onChange={text("brand")} />
           </Field>
           <Field label="Full role" error={errors.role}>
             <Input value={document.role} onChange={text("role")} />
           </Field>
-          <Field label="Location" error={errors.location}>
-            <Input value={document.location} onChange={text("location")} />
-          </Field>
-        </div>
-      </section>
-      <section className="content-form-section">
-        <h2>Hero</h2>
-        <div className="content-field-grid">
-          <Field label="Section tag" error={errors.sectionTag}>
-            <Input value={document.sectionTag} onChange={text("sectionTag")} />
-          </Field>
-          <Field label="Headline" error={errors.title}>
-            <Input value={document.title} onChange={text("title")} />
-          </Field>
           <Field label="Displayed role" error={errors.heroRole}>
             <Input value={document.heroRole} onChange={text("heroRole")} />
           </Field>
-          <Field label="Résumé button label" error={errors.resumeButtonLabel}>
-            <Input
-              value={document.resumeButtonLabel}
-              onChange={text("resumeButtonLabel")}
-            />
-          </Field>
-          <Field label="Scroll cue" error={errors.scrollCue}>
-            <Input value={document.scrollCue} onChange={text("scrollCue")} />
+          <Field label="Location" error={errors.location}>
+            <Input value={document.location} onChange={text("location")} />
           </Field>
           <Field label="Description" error={errors.description}>
             <Textarea
@@ -94,36 +69,6 @@ export function HeroFields({
             />
           </Field>
         </div>
-      </section>
-      <section className="content-form-section">
-        <h2>Navigation labels</h2>
-        <p>Destinations stay fixed to preserve current navigation behavior.</p>
-        <div className="content-array-list">
-          {document.navigation.map((item, index) => (
-            <Field
-              key={item.href}
-              label={item.href}
-              error={errors[`navigation.${index}.label`]}
-            >
-              <Input
-                value={item.label}
-                onChange={(event) =>
-                  onChange({
-                    ...document,
-                    navigation: document.navigation.map((entry, entryIndex) =>
-                      entryIndex === index
-                        ? { ...entry, label: event.target.value }
-                        : entry,
-                    ),
-                  })
-                }
-              />
-            </Field>
-          ))}
-        </div>
-        {errors.navigation ? (
-          <small className="field-error">{errors.navigation}</small>
-        ) : null}
       </section>
     </>
   );
@@ -178,13 +123,6 @@ function RowActions({
   );
 }
 
-function moveItem<Item>(items: Item[], from: number, to: number): Item[] {
-  const next = [...items];
-  const [item] = next.splice(from, 1);
-  if (item !== undefined) next.splice(to, 0, item);
-  return next;
-}
-
 export function AboutFields({
   document,
   errors,
@@ -194,35 +132,8 @@ export function AboutFields({
   readonly errors: ContentFieldErrors;
   readonly onChange: (document: AboutDocument) => void;
 }) {
-  const text =
-    (field: "eyebrow" | "title" | "lead" | "stamp" | "photoCaptionPrefix") =>
-    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      onChange({ ...document, [field]: event.target.value });
   return (
     <>
-      <section className="content-form-section">
-        <h2>Section framing</h2>
-        <div className="content-field-grid">
-          <Field label="Eyebrow" error={errors.eyebrow}>
-            <Input value={document.eyebrow} onChange={text("eyebrow")} />
-          </Field>
-          <Field label="Title" error={errors.title}>
-            <Input value={document.title} onChange={text("title")} />
-          </Field>
-          <Field label="Lead" error={errors.lead}>
-            <Textarea value={document.lead} onChange={text("lead")} />
-          </Field>
-          <Field label="Stamp" error={errors.stamp}>
-            <Input value={document.stamp} onChange={text("stamp")} />
-          </Field>
-          <Field label="Photo caption prefix" error={errors.photoCaptionPrefix}>
-            <Input
-              value={document.photoCaptionPrefix}
-              onChange={text("photoCaptionPrefix")}
-            />
-          </Field>
-        </div>
-      </section>
       <section className="content-form-section">
         <div className="content-section-heading">
           <div>
@@ -268,7 +179,7 @@ export function AboutFields({
                 move={(from, to) =>
                   onChange({
                     ...document,
-                    paragraphs: moveItem(document.paragraphs, from, to),
+                    paragraphs: moveContentItem(document.paragraphs, from, to),
                   })
                 }
                 remove={(itemIndex) =>
@@ -345,7 +256,7 @@ export function AboutFields({
                 move={(from, to) =>
                   onChange({
                     ...document,
-                    facts: moveItem(document.facts, from, to),
+                    facts: moveContentItem(document.facts, from, to),
                   })
                 }
                 remove={(itemIndex) =>
@@ -381,24 +292,15 @@ export function ContactFields({
   return (
     <>
       <section className="content-form-section">
-        <h2>Contact section</h2>
+        <h2>Contact information</h2>
         <div className="content-field-grid">
-          <Field label="Eyebrow" error={errors.eyebrow}>
-            <Input value={document.eyebrow} onChange={text("eyebrow")} />
-          </Field>
-          <Field label="Title" error={errors.title}>
-            <Input value={document.title} onChange={text("title")} />
-          </Field>
           <Field label="Availability" error={errors.availability}>
             <Textarea
               value={document.availability}
               onChange={text("availability")}
             />
           </Field>
-          <Field label="Note title" error={errors.noteTitle}>
-            <Input value={document.noteTitle} onChange={text("noteTitle")} />
-          </Field>
-          <Field label="Note body" error={errors.noteBody}>
+          <Field label="Contact message" error={errors.noteBody}>
             <Textarea value={document.noteBody} onChange={text("noteBody")} />
           </Field>
           <Field label="Email" error={errors.email}>
@@ -507,7 +409,11 @@ export function ContactFields({
                 move={(from, to) =>
                   onChange({
                     ...document,
-                    socialLinks: moveItem(document.socialLinks, from, to),
+                    socialLinks: moveContentItem(
+                      document.socialLinks,
+                      from,
+                      to,
+                    ),
                   })
                 }
                 remove={(itemIndex) =>
@@ -523,21 +429,368 @@ export function ContactFields({
           ))}
         </div>
       </section>
+    </>
+  );
+}
+
+export function TimelineFields({
+  document,
+  errors,
+  onChange,
+}: {
+  readonly document: TimelineDocument;
+  readonly errors: ContentFieldErrors;
+  readonly onChange: (document: TimelineDocument) => void;
+}) {
+  const changeEntry = (
+    index: number,
+    field: keyof TimelineDocument["entries"][number],
+    value: string,
+  ) =>
+    onChange({
+      ...document,
+      entries: document.entries.map((entry, candidate) =>
+        candidate === index ? { ...entry, [field]: value } : entry,
+      ),
+    });
+  return (
+    <>
       <section className="content-form-section">
-        <h2>Footer</h2>
-        <div className="content-field-grid">
-          <Field label="Primary line" error={errors.footerPrimary}>
-            <Input
-              value={document.footerPrimary}
-              onChange={text("footerPrimary")}
-            />
-          </Field>
-          <Field label="Secondary line" error={errors.footerSecondary}>
-            <Input
-              value={document.footerSecondary}
-              onChange={text("footerSecondary")}
-            />
-          </Field>
+        <div className="content-section-heading">
+          <div>
+            <h2>Timeline entries</h2>
+            <p>Displayed in this order.</p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() =>
+              onChange({
+                ...document,
+                entries: [
+                  ...document.entries,
+                  {
+                    role: "",
+                    organization: "",
+                    location: "",
+                    date: "",
+                    detail: "",
+                  },
+                ],
+              })
+            }
+          >
+            <Plus /> Add entry
+          </Button>
+        </div>
+        <div className="content-array-list">
+          {document.entries.map((entry, index) => (
+            <div className="content-array-row" key={index}>
+              <div className="content-field-grid">
+                <Field
+                  label="Role or title"
+                  error={errors[`entries.${index}.role`]}
+                >
+                  <Input
+                    value={entry.role}
+                    onChange={(event) =>
+                      changeEntry(index, "role", event.target.value)
+                    }
+                  />
+                </Field>
+                <Field
+                  label="Organization"
+                  error={errors[`entries.${index}.organization`]}
+                >
+                  <Input
+                    value={entry.organization}
+                    onChange={(event) =>
+                      changeEntry(index, "organization", event.target.value)
+                    }
+                  />
+                </Field>
+                <Field label="Date" error={errors[`entries.${index}.date`]}>
+                  <Input
+                    value={entry.date}
+                    onChange={(event) =>
+                      changeEntry(index, "date", event.target.value)
+                    }
+                  />
+                </Field>
+                <Field
+                  label="Location"
+                  error={errors[`entries.${index}.location`]}
+                >
+                  <Input
+                    value={entry.location}
+                    onChange={(event) =>
+                      changeEntry(index, "location", event.target.value)
+                    }
+                  />
+                </Field>
+                <Field
+                  label="Description"
+                  error={errors[`entries.${index}.detail`]}
+                >
+                  <Textarea
+                    value={entry.detail}
+                    onChange={(event) =>
+                      changeEntry(index, "detail", event.target.value)
+                    }
+                  />
+                </Field>
+              </div>
+              <RowActions
+                canRemove={document.entries.length > 1}
+                index={index}
+                length={document.entries.length}
+                move={(from, to) =>
+                  onChange({
+                    ...document,
+                    entries: moveContentItem(document.entries, from, to),
+                  })
+                }
+                remove={(itemIndex) =>
+                  onChange({
+                    ...document,
+                    entries: document.entries.filter(
+                      (_, candidate) => candidate !== itemIndex,
+                    ),
+                  })
+                }
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+    </>
+  );
+}
+
+export function TechnologiesFields({
+  document,
+  errors,
+  onChange,
+}: {
+  readonly document: TechnologiesDocument;
+  readonly errors: ContentFieldErrors;
+  readonly onChange: (document: TechnologiesDocument) => void;
+}) {
+  return (
+    <>
+      <section className="content-form-section">
+        <div className="content-section-heading">
+          <div>
+            <h2>Technology categories</h2>
+            <p>Categories and technologies display in this order.</p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() =>
+              onChange({
+                ...document,
+                groups: [
+                  ...document.groups,
+                  { category: "", technologies: [{ name: "" }] },
+                ],
+              })
+            }
+          >
+            <Plus /> Add category
+          </Button>
+        </div>
+        <div className="content-array-list">
+          {document.groups.map((group, groupIndex) => (
+            <div className="technology-group-editor" key={groupIndex}>
+              <div className="content-array-row">
+                <Field
+                  label="Category"
+                  error={errors[`groups.${groupIndex}.category`]}
+                >
+                  <Input
+                    value={group.category}
+                    onChange={(event) =>
+                      onChange({
+                        ...document,
+                        groups: document.groups.map((item, index) =>
+                          index === groupIndex
+                            ? { ...item, category: event.target.value }
+                            : item,
+                        ),
+                      })
+                    }
+                  />
+                </Field>
+                <RowActions
+                  canRemove={document.groups.length > 1}
+                  index={groupIndex}
+                  length={document.groups.length}
+                  move={(from, to) =>
+                    onChange({
+                      ...document,
+                      groups: moveContentItem(document.groups, from, to),
+                    })
+                  }
+                  remove={(index) =>
+                    onChange({
+                      ...document,
+                      groups: document.groups.filter(
+                        (_, candidate) => candidate !== index,
+                      ),
+                    })
+                  }
+                />
+              </div>
+              <div className="technology-list-heading">
+                <strong>Technologies</strong>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    onChange({
+                      ...document,
+                      groups: document.groups.map((item, index) =>
+                        index === groupIndex
+                          ? {
+                              ...item,
+                              technologies: [
+                                ...item.technologies,
+                                { name: "" },
+                              ],
+                            }
+                          : item,
+                      ),
+                    })
+                  }
+                >
+                  <Plus /> Add technology
+                </Button>
+              </div>
+              {errors[`groups.${groupIndex}.technologies`] ? (
+                <small className="field-error">
+                  {errors[`groups.${groupIndex}.technologies`]}
+                </small>
+              ) : null}
+              <div className="content-array-list">
+                {group.technologies.map((technology, technologyIndex) => (
+                  <div className="content-array-row" key={technologyIndex}>
+                    <div className="content-field-grid">
+                      <Field
+                        label="Name"
+                        error={
+                          errors[
+                            `groups.${groupIndex}.technologies.${technologyIndex}.name`
+                          ]
+                        }
+                      >
+                        <Input
+                          value={technology.name}
+                          onChange={(event) =>
+                            onChange({
+                              ...document,
+                              groups: document.groups.map((item, index) =>
+                                index === groupIndex
+                                  ? {
+                                      ...item,
+                                      technologies: item.technologies.map(
+                                        (entry, candidate) =>
+                                          candidate === technologyIndex
+                                            ? {
+                                                ...entry,
+                                                name: event.target.value,
+                                              }
+                                            : entry,
+                                      ),
+                                    }
+                                  : item,
+                              ),
+                            })
+                          }
+                        />
+                      </Field>
+                      <Field label="Icon">
+                        <select
+                          value={technology.iconKey ?? ""}
+                          onChange={(event) =>
+                            onChange({
+                              ...document,
+                              groups: document.groups.map((item, index) =>
+                                index === groupIndex
+                                  ? {
+                                      ...item,
+                                      technologies: item.technologies.map(
+                                        (entry, candidate) =>
+                                          candidate === technologyIndex
+                                            ? {
+                                                name: entry.name,
+                                                ...(event.target.value
+                                                  ? {
+                                                      iconKey: event.target
+                                                        .value as TechnologiesDocument["groups"][number]["technologies"][number]["iconKey"],
+                                                    }
+                                                  : {}),
+                                              }
+                                            : entry,
+                                      ),
+                                    }
+                                  : item,
+                              ),
+                            })
+                          }
+                        >
+                          <option value="">No icon</option>
+                          {TECHNOLOGY_ICON_KEYS.map((iconKey) => (
+                            <option key={iconKey} value={iconKey}>
+                              {iconKey}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                    </div>
+                    <RowActions
+                      canRemove={group.technologies.length > 1}
+                      index={technologyIndex}
+                      length={group.technologies.length}
+                      move={(from, to) =>
+                        onChange({
+                          ...document,
+                          groups: document.groups.map((item, index) =>
+                            index === groupIndex
+                              ? {
+                                  ...item,
+                                  technologies: moveContentItem(
+                                    item.technologies,
+                                    from,
+                                    to,
+                                  ),
+                                }
+                              : item,
+                          ),
+                        })
+                      }
+                      remove={(index) =>
+                        onChange({
+                          ...document,
+                          groups: document.groups.map((item, candidate) =>
+                            candidate === groupIndex
+                              ? {
+                                  ...item,
+                                  technologies: item.technologies.filter(
+                                    (_, technologyCandidate) =>
+                                      technologyCandidate !== index,
+                                  ),
+                                }
+                              : item,
+                          ),
+                        })
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </section>
     </>

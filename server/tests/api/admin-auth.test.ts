@@ -116,6 +116,23 @@ describe("GitHub OAuth client", () => {
 });
 
 describe("admin authentication API", () => {
+  it("allows DELETE preflights from the configured Admin origin", async () => {
+    const { app } = createTestAuth();
+    const response = await request(app)
+      .options("/api/auth/session")
+      .set("Origin", ADMIN_ORIGIN)
+      .set("Access-Control-Request-Method", "DELETE")
+      .set("Access-Control-Request-Headers", "X-CSRF-Token");
+
+    expect(response.status).toBe(204);
+    expect(requiredHeader(response, "access-control-allow-origin")).toBe(
+      ADMIN_ORIGIN,
+    );
+    expect(requiredHeader(response, "access-control-allow-methods")).toContain(
+      "DELETE",
+    );
+  });
+
   it("completes GitHub OAuth for the allowlisted numeric identity", async () => {
     const { app } = createTestAuth();
     const start = await request(app).get("/api/auth/github");

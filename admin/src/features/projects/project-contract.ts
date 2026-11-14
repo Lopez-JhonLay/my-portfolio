@@ -20,12 +20,21 @@ export type ProjectDraft = {
   readonly groupOrder: number;
 };
 
+export type ProjectGalleryItem = {
+  readonly mediaId: string;
+  readonly altText: string;
+  readonly isCover: boolean;
+};
+
+export type ProjectGallery = readonly ProjectGalleryItem[];
+
 export type AdminProject = {
   readonly id: string;
   readonly lifecycle: "active" | "trashed";
   readonly publicationIntent: "include" | "exclude";
   readonly revision: string;
   readonly draft: ProjectDraft;
+  readonly gallery?: ProjectGallery;
 };
 
 export type ProjectList = {
@@ -55,7 +64,8 @@ export type DraftOperation =
         | "project_draft_saved"
         | "featured_draft_saved"
         | "stale_revision"
-        | "invalid_featured_reference";
+        | "invalid_featured_reference"
+        | "invalid_gallery_reference";
       readonly resultRevision: string;
     };
 
@@ -100,6 +110,7 @@ export type ProjectFormValue = {
   readonly slug: string;
   readonly longDescriptionMarkdown: string;
   readonly groupOrder: string;
+  readonly gallery: ProjectGallery;
 };
 
 export type ProjectFormErrors = Partial<Record<keyof ProjectFormValue, string>>;
@@ -116,6 +127,7 @@ export const EMPTY_PROJECT_FORM: ProjectFormValue = {
   slug: "",
   longDescriptionMarkdown: "",
   groupOrder: "1",
+  gallery: [],
 };
 
 export function projectToForm(project: AdminProject): ProjectFormValue {
@@ -131,6 +143,7 @@ export function projectToForm(project: AdminProject): ProjectFormValue {
     slug: project.draft.slug,
     longDescriptionMarkdown: project.draft.longDescriptionMarkdown ?? "",
     groupOrder: String(project.draft.groupOrder),
+    gallery: project.gallery ?? [],
   };
 }
 
@@ -147,6 +160,7 @@ function isHttpUrl(value: string): boolean {
 
 export function validateProjectForm(value: ProjectFormValue): {
   readonly draft?: ProjectDraft;
+  readonly gallery?: ProjectGallery;
   readonly errors: ProjectFormErrors;
 } {
   const errors: ProjectFormErrors = {};
@@ -180,11 +194,26 @@ export function validateProjectForm(value: ProjectFormValue): {
     value.longDescriptionMarkdown.length > 0
   )
     errors.longDescriptionMarkdown = "Markdown cannot contain only spaces.";
+  if (value.gallery.length > 5)
+    errors.gallery = "Use no more than five images.";
+  if (
+    value.gallery.some(({ altText }) => altText.trim().length === 0) ||
+    (value.gallery.length > 0 &&
+      value.gallery.filter(({ isCover }) => isCover).length !== 1) ||
+    new Set(value.gallery.map(({ mediaId }) => mediaId)).size !==
+      value.gallery.length
+  )
+    errors.gallery =
+      "Gallery images need distinct files, alt text, and exactly one cover.";
 
   if (Object.keys(errors).length > 0) return { errors };
 
   return {
     errors,
+    gallery: value.gallery.map((item) => ({
+      ...item,
+      altText: item.altText.trim(),
+    })),
     draft: {
       number: value.number.trim(),
       name: value.name.trim(),

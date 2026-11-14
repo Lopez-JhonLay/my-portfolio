@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   loadPublicProjects,
+  loadPublicProjectDetail,
   readPublicApiOrigin,
 } from "./public-projects-client.js";
 
@@ -101,6 +102,10 @@ test("rejects blank public card fields and invalid slugs", async () => {
     { ...PROJECT, role: "" },
     { ...PROJECT, tech: ["React", " "] },
     { ...PROJECT, slug: "Invalid Slug" },
+    {
+      ...PROJECT,
+      cover: { mediaId: "11111111-1111-1111-1111-111111111111", altText: "Cover" },
+    },
   ]) {
     const responses = [
       jsonResponse({ status: "published" }),
@@ -155,4 +160,26 @@ test("validates the configured public API origin", () => {
     () => readPublicApiOrigin("https://user@example.com/path"),
     /must be an HTTP\(S\) origin/i,
   );
+});
+
+test("validates Project detail galleries and builds stable media routes", async () => {
+  const mediaId = "11111111-1111-4111-8111-111111111111";
+  const responses = [
+    jsonResponse({ status: "published" }),
+    jsonResponse({
+      ...PROJECT,
+      cover: { mediaId, altText: "Dashboard cover" },
+      gallery: [{ mediaId, altText: "Dashboard cover" }],
+      longDescriptionMarkdown: "## Details",
+    }),
+  ];
+
+  const project = await loadPublicProjectDetail({
+    apiOrigin: API_ORIGIN,
+    fetchImpl: async () => responses.shift(),
+    slug: PROJECT.slug,
+  });
+
+  assert.equal(project.cover.url, `${API_ORIGIN}/api/media/${mediaId}`);
+  assert.equal(project.gallery[0].url, `${API_ORIGIN}/api/media/${mediaId}`);
 });

@@ -6,7 +6,7 @@ export function ContentLoadNotice({ onRetry }) {
     <div className="content-load-notice" role="alert">
       <p>Published portfolio copy could not be loaded. Built-in content is shown.</p>
       <button className="noir-button noir-button-ghost" onClick={onRetry} type="button">
-        <RotateCw />
+        <RotateCw aria-hidden="true" size={16} />
         Retry
       </button>
     </div>

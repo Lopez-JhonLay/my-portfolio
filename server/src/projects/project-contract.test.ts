@@ -4,6 +4,7 @@ import {
   PROJECT_CATEGORY_ORDER,
   draftFeaturedSlotsSchema,
   projectPublishCandidateSchema,
+  projectGallerySchema,
   projectRecordSchema,
   projectVersionSchema,
   publishedFeaturedSlotsSchema,
@@ -368,5 +369,24 @@ describe("Project domain contract", () => {
 
       expect(result.success).toBe(false);
     }
+  });
+});
+
+describe("Project gallery contract", () => {
+  it("requires distinct media, alt text, and exactly one cover", () => {
+    const firstId = "11111111-1111-4111-8111-111111111111";
+    const secondId = "22222222-2222-4222-8222-222222222222";
+    expect(
+      projectGallerySchema.safeParse([
+        { mediaId: firstId, altText: "Dashboard", isCover: true },
+        { mediaId: secondId, altText: "Project details", isCover: false },
+      ]).success,
+    ).toBe(true);
+    expect(
+      projectGallerySchema.safeParse([
+        { mediaId: firstId, altText: "Dashboard", isCover: false },
+        { mediaId: firstId, altText: "Duplicate", isCover: false },
+      ]).success,
+    ).toBe(false);
   });
 });

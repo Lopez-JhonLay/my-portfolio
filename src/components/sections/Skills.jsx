@@ -1,5 +1,7 @@
 import { Code2 } from "lucide-react";
 import { motion } from "framer-motion";
+import PropTypes from "prop-types";
+import { TechnologiesBodySkeleton } from "@/components/sections/content-skeletons";
 import {
   FaGitAlt,
   FaJs,
@@ -22,30 +24,16 @@ import {
   SiTypescript,
   SiVuedotjs,
 } from "react-icons/si";
-import { skillGroups } from "@/data/portfolio";
-
 const skillIcons = {
-  Git: FaGitAlt,
-  JavaScript: FaJs,
-  React: FaReact,
-  "Next.js": SiNextdotjs,
-  "Vue.js": SiVuedotjs,
-  "Material UI": SiMui,
-  "Tailwind CSS": SiTailwindcss,
-  TypeScript: SiTypescript,
-  "Node.js": SiNodedotjs,
-  NestJS: SiNestjs,
-  "Cloudflare Workers": SiCloudflareworkers,
-  PostgreSQL: SiPostgresql,
-  BigQuery: SiGooglebigquery,
-  "Google Cloud Platform": SiGooglecloud,
-  Cloudflare: SiCloudflare,
-  "GitHub Actions": SiGithubactions,
-  GitHub: SiGithub,
-  JWT: SiJsonwebtokens,
+  git: FaGitAlt, javascript: FaJs, react: FaReact, nextjs: SiNextdotjs,
+  vue: SiVuedotjs, "material-ui": SiMui, "tailwind-css": SiTailwindcss,
+  typescript: SiTypescript, nodejs: SiNodedotjs, nestjs: SiNestjs,
+  "cloudflare-workers": SiCloudflareworkers, postgresql: SiPostgresql,
+  bigquery: SiGooglebigquery, "google-cloud": SiGooglecloud, cloudflare: SiCloudflare,
+  "github-actions": SiGithubactions, github: SiGithub, jwt: SiJsonwebtokens,
 };
 
-export function Skills() {
+export function Skills({ content, loading = false }) {
   return (
     <motion.section
       className="noir-section"
@@ -55,33 +43,41 @@ export function Skills() {
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.45 }}
     >
-      <div className="eyebrow type">04 - Tools of the Trade</div>
+      <div className="eyebrow type">{content.eyebrow}</div>
       <h2 className="section-title">
         <Code2 />
-        The Arsenal
+        {content.title}
       </h2>
-      <p className="section-lead">
-        Technologies I use across frontend, backend, data, cloud, and testing.
-      </p>
+      <p className="section-lead">{content.lead}</p>
 
-      <div className="arsenal-grid">
-        {skillGroups.map((group) => (
+      {loading ? <TechnologiesBodySkeleton /> : <div className="arsenal-grid">
+        {content.groups.map((group) => (
           <article className="weapon-card" key={group.category}>
             <h3>{group.category}</h3>
             <div className="skill-list">
-              {group.skills.map((skill) => {
-                const Icon = skillIcons[skill];
+              {group.technologies.map((technology) => {
+                const Icon = skillIcons[technology.iconKey];
                 return (
-                  <span className="skill-pill" key={skill}>
+                  <span className="skill-pill" key={technology.name}>
                     {Icon ? <Icon aria-hidden="true" /> : null}
-                    {skill}
+                    {technology.name}
                   </span>
                 );
               })}
             </div>
           </article>
         ))}
-      </div>
+      </div>}
     </motion.section>
   );
 }
+
+Skills.propTypes = {
+  content: PropTypes.shape({
+    eyebrow: PropTypes.string.isRequired,
+    groups: PropTypes.arrayOf(PropTypes.shape({ category: PropTypes.string.isRequired, technologies: PropTypes.arrayOf(PropTypes.shape({ iconKey: PropTypes.string, name: PropTypes.string.isRequired })).isRequired })).isRequired,
+    lead: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+  }).isRequired,
+  loading: PropTypes.bool,
+};

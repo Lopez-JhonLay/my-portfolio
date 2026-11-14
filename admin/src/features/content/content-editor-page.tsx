@@ -1,35 +1,51 @@
 import { RotateCcw, Save } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "../../components/ui/button";
+import { Skeleton } from "../../components/ui/skeleton";
 import { OperationAlert } from "../shell/operation-alert";
+import { ContextualMediaField } from "../media/contextual-media-field";
 import type {
   AboutDocument,
   ContactDocument,
   EditableContentSectionKey,
   HeroDocument,
+  TechnologiesDocument,
+  TimelineDocument,
 } from "./content-contract";
 import { createContentClient } from "./content-client";
+import { ContentEditorSkeleton } from "./content-editor-skeleton";
 import {
   AboutFields,
   ContactFields,
   HeroFields,
+  TechnologiesFields,
+  TimelineFields,
 } from "./content-editor-fields";
 import { useContentEditor } from "./use-content-editor";
+
+type TextContentSectionKey = Exclude<EditableContentSectionKey, "media-resume">;
 
 const titles = {
   hero: {
     title: "Hero",
-    description:
-      "Manage site identity, navigation labels, and the opening message.",
+    description: "Manage your name, role, location, and introduction.",
   },
   about: {
     title: "About Me",
-    description: "Manage the profile framing, biography, and personal facts.",
+    description: "Manage your biography and personal facts.",
+  },
+  timeline: {
+    title: "Timeline",
+    description: "Manage ordered experience and education entries.",
+  },
+  technologies: {
+    title: "Technologies",
+    description: "Manage ordered categories, skills, and built-in icons.",
   },
   contact: {
     title: "Contact",
-    description: "Manage contact details, social links, and footer copy.",
+    description: "Manage availability, contact details, and social links.",
   },
 } as const;
 
@@ -46,7 +62,7 @@ export function ContentEditorPage({
   readonly onDiscardReady: (discard: () => void) => void;
   readonly onDirtyChange: (dirty: boolean) => void;
   readonly onUnauthorized: () => void;
-  readonly sectionKey: EditableContentSectionKey;
+  readonly sectionKey: TextContentSectionKey;
 }) {
   const client = useMemo(() => createContentClient(apiOrigin), [apiOrigin]);
   const editor = useContentEditor({
@@ -55,21 +71,33 @@ export function ContentEditorPage({
     onUnauthorized,
     sectionKey,
   });
+  const [mediaDirty, setMediaDirty] = useState(false);
+  const discardMedia = useRef<() => void>(() => undefined);
+  const discardContent = editor.discardChanges;
 
   useEffect(() => {
-    onDirtyChange(editor.dirty);
+    onDirtyChange(editor.dirty || mediaDirty);
     return () => onDirtyChange(false);
-  }, [editor.dirty, onDirtyChange]);
+  }, [editor.dirty, mediaDirty, onDirtyChange]);
   useEffect(() => {
-    onDiscardReady(editor.discardChanges);
+    onDiscardReady(() => {
+      discardContent();
+      discardMedia.current();
+    });
     return () => onDiscardReady(() => undefined);
-  }, [editor.discardChanges, onDiscardReady]);
+  }, [discardContent, onDiscardReady]);
 
   if (editor.isLoading && editor.document === null)
     return (
-      <main className="workspace-loading" role="status">
-        <h1>{titles[sectionKey].title}</h1>
-        <span>Loading draft…</span>
+      <main className="content-workspace">
+        <header className="content-page-header">
+          <div>
+            <h1>{titles[sectionKey].title}</h1>
+            <p>{titles[sectionKey].description}</p>
+          </div>
+          <Skeleton className="h-6 w-28 rounded-full" />
+        </header>
+        <ContentEditorSkeleton sectionKey={sectionKey} />
       </main>
     );
   if (editor.document === null)
@@ -139,6 +167,18 @@ export function ContentEditorPage({
             errors={editor.errors}
             onChange={editor.setDocument}
           />
+        ) : sectionKey === "timeline" ? (
+          <TimelineFields
+            document={editor.document as TimelineDocument}
+            errors={editor.errors}
+            onChange={editor.setDocument}
+          />
+        ) : sectionKey === "technologies" ? (
+          <TechnologiesFields
+            document={editor.document as TechnologiesDocument}
+            errors={editor.errors}
+            onChange={editor.setDocument}
+          />
         ) : (
           <ContactFields
             document={editor.document as ContactDocument}
@@ -146,6 +186,39 @@ export function ContentEditorPage({
             onChange={editor.setDocument}
           />
         )}
+        {sectionKey === "hero" ? (
+          <ContextualMediaField
+            apiOrigin={apiOrigin}
+            csrfToken={csrfToken}
+            defaultLabel="Use bundled résumé"
+            description="Upload the PDF downloaded from the Hero button. A successful upload is selected automatically."
+            field="resumeMediaId"
+            kind="resume_pdf"
+            onDiscardReady={(discard) => {
+              discardMedia.current = discard;
+            }}
+            onDirtyChange={setMediaDirty}
+            onUnauthorized={onUnauthorized}
+            title="Résumé"
+            uploadLabel="Replace résumé"
+          />
+        ) : sectionKey === "about" ? (
+          <ContextualMediaField
+            apiOrigin={apiOrigin}
+            csrfToken={csrfToken}
+            defaultLabel="Use bundled profile image"
+            description="Upload the image shown in About Me. A successful upload is selected automatically."
+            field="profileImageMediaId"
+            kind="image"
+            onDiscardReady={(discard) => {
+              discardMedia.current = discard;
+            }}
+            onDirtyChange={setMediaDirty}
+            onUnauthorized={onUnauthorized}
+            title="Profile image"
+            uploadLabel="Replace profile image"
+          />
+        ) : null}
         <div className="content-save-bar">
           <span>
             {editor.dirty

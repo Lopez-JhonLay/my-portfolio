@@ -1,14 +1,9 @@
 const REQUEST_TIMEOUT_MS = 10_000;
-const SECTION_KEYS = new Set(['hero', 'about', 'contact']);
-const NAVIGATION_DESTINATIONS = [
-  '/#home',
-  '/#about',
-  '/#projects',
-  '/#experience',
-  '/#skills',
-  '/#contact',
-];
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const SECTION_KEYS = new Set(['hero', 'about', 'timeline', 'technologies', 'contact', 'media-resume']);
 const SOCIAL_ICON_KEYS = new Set(['facebook', 'github', 'linkedin', 'external']);
+const TECHNOLOGY_ICON_KEYS = new Set(['bigquery', 'cloudflare', 'cloudflare-workers', 'git', 'github', 'github-actions', 'google-cloud', 'javascript', 'jwt', 'material-ui', 'nestjs', 'nextjs', 'nodejs', 'postgresql', 'react', 'tailwind-css', 'typescript', 'vue']);
 
 function isRecord(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -32,38 +27,19 @@ function isHttpUrl(value) {
 }
 
 function parseHero(value) {
-  const keys = [
-    'browserTitle', 'name', 'brand', 'role', 'heroRole', 'location', 'navigation',
-    'sectionTag', 'title', 'description', 'resumeButtonLabel', 'scrollCue',
-  ];
+  const keys = ['name', 'role', 'heroRole', 'location', 'description'];
   if (!isRecord(value) || !hasOnlyKeys(value, keys)) throw new Error('Invalid Hero content');
-  const limits = { browserTitle: 120, name: 120, brand: 12, role: 160, heroRole: 120,
-    location: 160, sectionTag: 80, title: 160, description: 2000,
-    resumeButtonLabel: 80, scrollCue: 80 };
+  const limits = { name: 120, role: 160, heroRole: 120, location: 160, description: 2000 };
   if (Object.entries(limits).some(([key, maximum]) => !isText(value[key], maximum))) {
     throw new Error('Invalid Hero content');
   }
-  if (!Array.isArray(value.navigation) || value.navigation.length !== 6) {
-    throw new Error('Invalid Hero navigation');
-  }
-  const destinations = value.navigation.map((item) => {
-    if (!isRecord(item) || !hasOnlyKeys(item, ['label', 'href']) ||
-      !isText(item.label, 80) || !NAVIGATION_DESTINATIONS.includes(item.href)) {
-      throw new Error('Invalid Hero navigation');
-    }
-    return item.href;
-  });
-  if (new Set(destinations).size !== 6) throw new Error('Invalid Hero navigation');
   return value;
 }
 
 function parseAbout(value) {
-  if (!isRecord(value) || !hasOnlyKeys(value, [
-    'eyebrow', 'title', 'lead', 'paragraphs', 'facts', 'stamp', 'photoCaptionPrefix',
-  ])) throw new Error('Invalid About content');
-  if (!isText(value.eyebrow, 80) || !isText(value.title, 160) ||
-    !isText(value.lead, 2000) || !isText(value.stamp, 80) ||
-    !isText(value.photoCaptionPrefix, 160) || !Array.isArray(value.paragraphs) ||
+  if (!isRecord(value) || !hasOnlyKeys(value, ['paragraphs', 'facts']))
+    throw new Error('Invalid About content');
+  if (!Array.isArray(value.paragraphs) ||
     value.paragraphs.length < 1 || value.paragraphs.length > 12 ||
     !value.paragraphs.every((item) => isText(item, 2000)) ||
     !Array.isArray(value.facts) || value.facts.length < 1 || value.facts.length > 12 ||
@@ -76,14 +52,11 @@ function parseAbout(value) {
 
 function parseContact(value) {
   if (!isRecord(value) || !hasOnlyKeys(value, [
-    'eyebrow', 'title', 'availability', 'noteTitle', 'noteBody', 'email',
-    'socialLinks', 'footerPrimary', 'footerSecondary',
+    'availability', 'noteBody', 'email', 'socialLinks',
   ])) throw new Error('Invalid Contact content');
-  if (!isText(value.eyebrow, 80) || !isText(value.title, 160) ||
-    !isText(value.availability, 2000) || !isText(value.noteTitle, 160) ||
+  if (!isText(value.availability, 2000) ||
     !isText(value.noteBody, 2000) || !isText(value.email, 320) ||
-    !/^\S+@\S+\.\S+$/.test(value.email) || !isText(value.footerPrimary, 240) ||
-    !isText(value.footerSecondary, 240) || !Array.isArray(value.socialLinks) ||
+    !/^\S+@\S+\.\S+$/.test(value.email) || !Array.isArray(value.socialLinks) ||
     value.socialLinks.length > 12 || !value.socialLinks.every((link) =>
       isRecord(link) && hasOnlyKeys(link, ['label', 'href', 'iconKey']) &&
       isText(link.label, 80) && isHttpUrl(link.href) && SOCIAL_ICON_KEYS.has(link.iconKey))) {
@@ -92,7 +65,44 @@ function parseContact(value) {
   return value;
 }
 
-const parsers = { hero: parseHero, about: parseAbout, contact: parseContact };
+function parseTimeline(value) {
+  if (!isRecord(value) || !hasOnlyKeys(value, ['entries']) ||
+    !Array.isArray(value.entries) || value.entries.length < 1 || value.entries.length > 30 ||
+    !value.entries.every((entry) => isRecord(entry) && hasOnlyKeys(entry, ['role', 'organization', 'location', 'date', 'detail']) &&
+      isText(entry.role, 160) && isText(entry.organization, 160) && isText(entry.location, 160) && isText(entry.date, 160) && isText(entry.detail, 2000)))
+    throw new Error('Invalid Timeline content');
+  return value;
+}
+
+function parseTechnologies(value) {
+  if (!isRecord(value) || !hasOnlyKeys(value, ['groups']) ||
+    !Array.isArray(value.groups) || value.groups.length < 1 || value.groups.length > 20)
+    throw new Error('Invalid Technologies content');
+  const categories = value.groups.map((group) => {
+    if (!isRecord(group) || !hasOnlyKeys(group, ['category', 'technologies']) || !isText(group.category, 120) ||
+      !Array.isArray(group.technologies) || group.technologies.length < 1 || group.technologies.length > 40 ||
+      !group.technologies.every((technology) => isRecord(technology) && hasOnlyKeys(technology, ['name', 'iconKey']) &&
+        isText(technology.name, 120) && (technology.iconKey === undefined || TECHNOLOGY_ICON_KEYS.has(technology.iconKey))))
+      throw new Error('Invalid Technologies content');
+    const names = group.technologies.map(({ name }) => name.toLowerCase());
+    if (new Set(names).size !== names.length) throw new Error('Invalid Technologies content');
+    return group.category.toLowerCase();
+  });
+  if (new Set(categories).size !== categories.length) throw new Error('Invalid Technologies content');
+  return value;
+}
+
+function parseMediaResume(value) {
+  const validId = (id) => id === null ||
+    (typeof id === 'string' && UUID_PATTERN.test(id));
+  if (!isRecord(value) ||
+    !hasOnlyKeys(value, ['profileImageMediaId', 'resumeMediaId']) ||
+    !validId(value.profileImageMediaId) || !validId(value.resumeMediaId))
+    throw new Error('Invalid Media content');
+  return value;
+}
+
+const parsers = { hero: parseHero, about: parseAbout, timeline: parseTimeline, technologies: parseTechnologies, contact: parseContact, 'media-resume': parseMediaResume };
 
 export function parsePublicContentSnapshot(value) {
   if (

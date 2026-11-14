@@ -10,10 +10,13 @@ void test("maps Admin paths to their workspace views", () => {
   assert.equal(resolveAdminView("/featured"), "featured");
   assert.equal(resolveAdminView("/hero"), "hero");
   assert.equal(resolveAdminView("/about"), "about");
+  assert.equal(resolveAdminView("/timeline"), "timeline");
+  assert.equal(resolveAdminView("/technologies"), "technologies");
   assert.equal(resolveAdminView("/contact"), "contact");
   assert.equal(resolveAdminView("/publish"), "publish");
 });
 
 void test("returns null for an unknown Admin path", () => {
   assert.equal(resolveAdminView("/settings"), null);
+  assert.equal(resolveAdminView("/media"), null);
 });

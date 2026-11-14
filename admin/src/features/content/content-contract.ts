@@ -19,41 +19,29 @@ export type ContentSectionSummary = {
 export const EDITABLE_CONTENT_SECTION_KEYS = [
   "hero",
   "about",
+  "timeline",
+  "technologies",
   "contact",
+  "media-resume",
 ] as const;
 export type EditableContentSectionKey =
   (typeof EDITABLE_CONTENT_SECTION_KEYS)[number];
 
 export type HeroDocument = {
-  browserTitle: string;
   name: string;
-  brand: string;
   role: string;
   heroRole: string;
   location: string;
-  navigation: Array<{ label: string; href: string }>;
-  sectionTag: string;
-  title: string;
   description: string;
-  resumeButtonLabel: string;
-  scrollCue: string;
 };
 
 export type AboutDocument = {
-  eyebrow: string;
-  title: string;
-  lead: string;
   paragraphs: string[];
   facts: Array<{ label: string; value: string }>;
-  stamp: string;
-  photoCaptionPrefix: string;
 };
 
 export type ContactDocument = {
-  eyebrow: string;
-  title: string;
   availability: string;
-  noteTitle: string;
   noteBody: string;
   email: string;
   socialLinks: Array<{
@@ -61,12 +49,60 @@ export type ContactDocument = {
     href: string;
     iconKey: "facebook" | "github" | "linkedin" | "external";
   }>;
-  footerPrimary: string;
-  footerSecondary: string;
+};
+
+export type TimelineDocument = {
+  entries: Array<{
+    role: string;
+    organization: string;
+    location: string;
+    date: string;
+    detail: string;
+  }>;
+};
+
+export const TECHNOLOGY_ICON_KEYS = [
+  "bigquery",
+  "cloudflare",
+  "cloudflare-workers",
+  "git",
+  "github",
+  "github-actions",
+  "google-cloud",
+  "javascript",
+  "jwt",
+  "material-ui",
+  "nestjs",
+  "nextjs",
+  "nodejs",
+  "postgresql",
+  "react",
+  "tailwind-css",
+  "typescript",
+  "vue",
+] as const;
+
+export type TechnologyIconKey = (typeof TECHNOLOGY_ICON_KEYS)[number];
+
+export type TechnologiesDocument = {
+  groups: Array<{
+    category: string;
+    technologies: Array<{ name: string; iconKey?: TechnologyIconKey }>;
+  }>;
+};
+
+export type MediaResumeDocument = {
+  profileImageMediaId: string | null;
+  resumeMediaId: string | null;
 };
 
 export type EditableContentDocument =
-  HeroDocument | AboutDocument | ContactDocument;
+  | HeroDocument
+  | AboutDocument
+  | TimelineDocument
+  | TechnologiesDocument
+  | ContactDocument
+  | MediaResumeDocument;
 
 export type AdminContentSection = {
   readonly sectionKey: EditableContentSectionKey;

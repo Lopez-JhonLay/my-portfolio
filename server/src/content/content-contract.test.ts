@@ -7,34 +7,15 @@ import {
 
 const documents = {
   hero: {
-    browserTitle: "Portfolio",
     name: "Jhon Lay Lopez",
-    brand: "JL",
     role: "Software Engineer",
     heroRole: "Application Developer",
     location: "Pasay, Philippines",
-    navigation: [
-      { label: "Home", href: "/#home" },
-      { label: "About", href: "/#about" },
-      { label: "Projects", href: "/#projects" },
-      { label: "Experience", href: "/#experience" },
-      { label: "Skills", href: "/#skills" },
-      { label: "Contact", href: "/#contact" },
-    ],
-    sectionTag: "Open file",
-    title: "Web & Mobile",
     description: "Practical software.",
-    resumeButtonLabel: "Download Portfolio",
-    scrollCue: "Descend",
   },
   about: {
-    eyebrow: "About",
-    title: "The Case File",
-    lead: "Profile",
     paragraphs: ["About paragraph"],
     facts: [{ label: "Status", value: "Open" }],
-    stamp: "Cleared",
-    photoCaptionPrefix: "Subject",
   },
   "projects-presentation": {
     eyebrow: "Projects",
@@ -57,9 +38,6 @@ const documents = {
     ],
   },
   timeline: {
-    eyebrow: "Timeline",
-    title: "Timeline",
-    lead: "Experience",
     entries: [
       {
         role: "Developer",
@@ -71,9 +49,6 @@ const documents = {
     ],
   },
   technologies: {
-    eyebrow: "Tools",
-    title: "Technologies",
-    lead: "Technology list",
     groups: [
       {
         category: "Frontend",
@@ -82,10 +57,7 @@ const documents = {
     ],
   },
   contact: {
-    eyebrow: "Contact",
-    title: "Open a Line",
     availability: "Available",
-    noteTitle: "Leave Word",
     noteBody: "Send a message.",
     email: "owner@example.com",
     socialLinks: [
@@ -95,8 +67,6 @@ const documents = {
         iconKey: "github",
       },
     ],
-    footerPrimary: "Copyright",
-    footerSecondary: "Built with care.",
   },
   "media-resume": {
     profileImageMediaId: null,
@@ -111,6 +81,19 @@ describe("content contracts", () => {
         documents[sectionKey],
       );
     }
+  });
+
+  it("strips legacy presentation copy from personal content documents", () => {
+    expect(
+      parseContentDocument("about", {
+        ...documents.about,
+        eyebrow: "Theme label",
+        title: "Theme title",
+        lead: "Theme lead",
+        stamp: "Theme stamp",
+        photoCaptionPrefix: "Theme caption",
+      }),
+    ).toEqual(documents.about);
   });
 
   it("rejects unsafe links and duplicate ordered values", () => {

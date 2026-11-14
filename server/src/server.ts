@@ -9,6 +9,17 @@ import {
   createDrizzleTransactionSessionBoundary,
 } from "./db/database-session.ts";
 import { createDatabaseRuntime } from "./db/database.ts";
+import {
+  createAdminMediaRouter,
+  createPublicMediaRouter,
+} from "./media/media-router.ts";
+import {
+  createS3MediaObjectStore,
+  type MediaStorageConfig,
+} from "./media/media-object-store.ts";
+import { createDrizzleMediaRepository } from "./media/media-repository.ts";
+import { createMediaService } from "./media/media-service.ts";
+import { validateStorageEnvironment } from "./media/media-storage-environment.ts";
 import { createAdminContentRouter } from "./content/admin-content-router.ts";
 import {
   createDrizzleAdminContentReadRepository,
@@ -47,7 +58,10 @@ function writeLog(
   console.log(output);
 }
 
-function startServer(environment: ServerEnvironment): void {
+function startServer(
+  environment: ServerEnvironment,
+  storageConfig: MediaStorageConfig | null,
+): void {
   const databaseRuntime = createDatabaseRuntime(environment.databaseUrl);
   const auth = createAdminAuth({
     config: {
@@ -62,9 +76,33 @@ function startServer(environment: ServerEnvironment): void {
       clientSecret: environment.githubClientSecret,
     }),
   });
+  const mediaService =
+    storageConfig === null
+      ? null
+      : createMediaService({
+          objectStore: createS3MediaObjectStore(storageConfig),
+          repository: createDrizzleMediaRepository({
+            reads: createDrizzleSnapshotSessionBoundary(
+              databaseRuntime.database,
+            ),
+            writes: createDrizzleTransactionSessionBoundary(
+              databaseRuntime.database,
+            ),
+          }),
+        });
   const app = createApp({
     adminOrigin: environment.adminOrigin,
     authRouter: auth.router,
+    ...(mediaService === null
+      ? {}
+      : {
+          adminMediaRouter: createAdminMediaRouter({
+            service: mediaService,
+            requireAdmin: auth.requireAdmin,
+            requireCsrf: auth.requireCsrf,
+          }),
+          publicMediaRouter: createPublicMediaRouter(mediaService),
+        }),
     adminContentRouter: createAdminContentRouter({
       mutationService: createDrizzleContentMutationService(
         createDrizzleTransactionSessionBoundary(databaseRuntime.database),
@@ -189,12 +227,16 @@ function startServer(environment: ServerEnvironment): void {
 }
 
 const environmentResult = validateEnvironment(process.env);
+const storageResult = validateStorageEnvironment(process.env);
 
-if (!environmentResult.success) {
+if (!environmentResult.success || !storageResult.success) {
   process.exitCode = 1;
   writeLog("error", "configuration_invalid", {
-    fields: environmentResult.invalidFields,
+    fields: [
+      ...(environmentResult.success ? [] : environmentResult.invalidFields),
+      ...(storageResult.success ? [] : storageResult.invalidFields),
+    ],
   });
 } else {
-  startServer(environmentResult.data);
+  startServer(environmentResult.data, storageResult.config);
 }

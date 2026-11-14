@@ -20,54 +20,20 @@ const httpUrl = z.url().refine((value) => {
   return protocol === "http:" || protocol === "https:";
 }, "URL must use HTTP or HTTPS");
 
-const navigationItemSchema = z.strictObject({
-  label,
-  href: z.enum([
-    "/#home",
-    "/#about",
-    "/#projects",
-    "/#experience",
-    "/#skills",
-    "/#contact",
-  ]),
+export const heroContentSchema = z.object({
+  name: requiredText(120),
+  role: requiredText(160),
+  heroRole: requiredText(120),
+  location: requiredText(160),
+  description: paragraph,
 });
 
-export const heroContentSchema = z
-  .strictObject({
-    browserTitle: requiredText(120),
-    name: requiredText(120),
-    brand: requiredText(12),
-    role: requiredText(160),
-    heroRole: requiredText(120),
-    location: requiredText(160),
-    navigation: z.array(navigationItemSchema).length(6),
-    sectionTag: label,
-    title: requiredText(160),
-    description: paragraph,
-    resumeButtonLabel: label,
-    scrollCue: label,
-  })
-  .superRefine((value, context) => {
-    if (new Set(value.navigation.map(({ href }) => href)).size !== 6) {
-      context.addIssue({
-        code: "custom",
-        message: "Navigation destinations must be unique",
-        path: ["navigation"],
-      });
-    }
-  });
-
-export const aboutContentSchema = z.strictObject({
-  eyebrow: label,
-  title: requiredText(160),
-  lead: paragraph,
+export const aboutContentSchema = z.object({
   paragraphs: z.array(paragraph).min(1).max(12),
   facts: z
     .array(z.strictObject({ label, value: requiredText(240) }))
     .min(1)
     .max(12),
-  stamp: label,
-  photoCaptionPrefix: requiredText(160),
 });
 
 const projectGroupPresentationSchema = z.strictObject({
@@ -104,10 +70,7 @@ export const projectsPresentationContentSchema = z
     }
   });
 
-export const timelineContentSchema = z.strictObject({
-  eyebrow: label,
-  title: requiredText(160),
-  lead: paragraph,
+export const timelineContentSchema = z.object({
   entries: z
     .array(
       z.strictObject({
@@ -149,10 +112,7 @@ const technologySchema = z.strictObject({
 });
 
 export const technologiesContentSchema = z
-  .strictObject({
-    eyebrow: label,
-    title: requiredText(160),
-    lead: paragraph,
+  .object({
     groups: z
       .array(
         z.strictObject({
@@ -193,11 +153,8 @@ export const SOCIAL_ICON_KEYS = [
   "external",
 ] as const;
 
-export const contactContentSchema = z.strictObject({
-  eyebrow: label,
-  title: requiredText(160),
+export const contactContentSchema = z.object({
   availability: paragraph,
-  noteTitle: requiredText(160),
   noteBody: paragraph,
   email: z.email(),
   socialLinks: z
@@ -209,8 +166,6 @@ export const contactContentSchema = z.strictObject({
       }),
     )
     .max(12),
-  footerPrimary: requiredText(240),
-  footerSecondary: requiredText(240),
 });
 
 export const mediaResumeContentSchema = z.strictObject({

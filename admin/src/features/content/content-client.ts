@@ -2,6 +2,7 @@ import { adminRequest } from "../../lib/admin-http.ts";
 import {
   CONTENT_SECTION_KEYS,
   EDITABLE_CONTENT_SECTION_KEYS,
+  TECHNOLOGY_ICON_KEYS,
   type AboutDocument,
   type AdminContentSection,
   type ContactDocument,
@@ -10,6 +11,9 @@ import {
   type EditableContentDocument,
   type EditableContentSectionKey,
   type HeroDocument,
+  type MediaResumeDocument,
+  type TechnologiesDocument,
+  type TimelineDocument,
   type ContentSectionKey,
   type ContentSectionSummary,
 } from "./content-contract.ts";
@@ -39,47 +43,17 @@ function isText(value: unknown): value is string {
 }
 
 function isHeroDocument(value: unknown): value is HeroDocument {
-  if (
-    !isRecord(value) ||
-    !hasOnlyKeys(value, [
-      "browserTitle",
+  return (
+    isRecord(value) &&
+    hasOnlyKeys(value, [
       "name",
-      "brand",
       "role",
       "heroRole",
       "location",
-      "navigation",
-      "sectionTag",
-      "title",
       "description",
-      "resumeButtonLabel",
-      "scrollCue",
-    ])
-  )
-    return false;
-  const textFields = [
-    "browserTitle",
-    "name",
-    "brand",
-    "role",
-    "heroRole",
-    "location",
-    "sectionTag",
-    "title",
-    "description",
-    "resumeButtonLabel",
-    "scrollCue",
-  ];
-  return (
-    textFields.every((field) => isText(value[field])) &&
-    Array.isArray(value.navigation) &&
-    value.navigation.length === 6 &&
-    value.navigation.every(
-      (item) =>
-        isRecord(item) &&
-        hasOnlyKeys(item, ["label", "href"]) &&
-        isText(item.label) &&
-        isText(item.href),
+    ]) &&
+    ["name", "role", "heroRole", "location", "description"].every((field) =>
+      isText(value[field]),
     )
   );
 }
@@ -87,18 +61,7 @@ function isHeroDocument(value: unknown): value is HeroDocument {
 function isAboutDocument(value: unknown): value is AboutDocument {
   return (
     isRecord(value) &&
-    hasOnlyKeys(value, [
-      "eyebrow",
-      "title",
-      "lead",
-      "paragraphs",
-      "facts",
-      "stamp",
-      "photoCaptionPrefix",
-    ]) &&
-    ["eyebrow", "title", "lead", "stamp", "photoCaptionPrefix"].every((field) =>
-      isText(value[field]),
-    ) &&
+    hasOnlyKeys(value, ["paragraphs", "facts"]) &&
     Array.isArray(value.paragraphs) &&
     value.paragraphs.every(isText) &&
     Array.isArray(value.facts) &&
@@ -116,27 +79,10 @@ function isContactDocument(value: unknown): value is ContactDocument {
   const iconKeys = ["facebook", "github", "linkedin", "external"];
   return (
     isRecord(value) &&
-    hasOnlyKeys(value, [
-      "eyebrow",
-      "title",
-      "availability",
-      "noteTitle",
-      "noteBody",
-      "email",
-      "socialLinks",
-      "footerPrimary",
-      "footerSecondary",
-    ]) &&
-    [
-      "eyebrow",
-      "title",
-      "availability",
-      "noteTitle",
-      "noteBody",
-      "email",
-      "footerPrimary",
-      "footerSecondary",
-    ].every((field) => isText(value[field])) &&
+    hasOnlyKeys(value, ["availability", "noteBody", "email", "socialLinks"]) &&
+    ["availability", "noteBody", "email"].every((field) =>
+      isText(value[field]),
+    ) &&
     Array.isArray(value.socialLinks) &&
     value.socialLinks.every(
       (link) =>
@@ -149,13 +95,74 @@ function isContactDocument(value: unknown): value is ContactDocument {
   );
 }
 
+function isTimelineDocument(value: unknown): value is TimelineDocument {
+  return (
+    isRecord(value) &&
+    hasOnlyKeys(value, ["entries"]) &&
+    Array.isArray(value.entries) &&
+    value.entries.every(
+      (entry) =>
+        isRecord(entry) &&
+        hasOnlyKeys(entry, [
+          "role",
+          "organization",
+          "location",
+          "date",
+          "detail",
+        ]) &&
+        ["role", "organization", "location", "date", "detail"].every((field) =>
+          isText(entry[field]),
+        ),
+    )
+  );
+}
+
+function isTechnologiesDocument(value: unknown): value is TechnologiesDocument {
+  return (
+    isRecord(value) &&
+    hasOnlyKeys(value, ["groups"]) &&
+    Array.isArray(value.groups) &&
+    value.groups.every(
+      (group) =>
+        isRecord(group) &&
+        hasOnlyKeys(group, ["category", "technologies"]) &&
+        isText(group.category) &&
+        Array.isArray(group.technologies) &&
+        group.technologies.every(
+          (technology) =>
+            isRecord(technology) &&
+            hasOnlyKeys(technology, ["name", "iconKey"]) &&
+            isText(technology.name) &&
+            (technology.iconKey === undefined ||
+              TECHNOLOGY_ICON_KEYS.includes(
+                technology.iconKey as (typeof TECHNOLOGY_ICON_KEYS)[number],
+              )),
+        ),
+    )
+  );
+}
+
+function isMediaResumeDocument(value: unknown): value is MediaResumeDocument {
+  return (
+    isRecord(value) &&
+    hasOnlyKeys(value, ["profileImageMediaId", "resumeMediaId"]) &&
+    (value.profileImageMediaId === null || isUuid(value.profileImageMediaId)) &&
+    (value.resumeMediaId === null || isUuid(value.resumeMediaId))
+  );
+}
+
 function parseDocument(
   sectionKey: EditableContentSectionKey,
   value: unknown,
 ): EditableContentDocument {
   if (sectionKey === "hero" && isHeroDocument(value)) return value;
   if (sectionKey === "about" && isAboutDocument(value)) return value;
+  if (sectionKey === "timeline" && isTimelineDocument(value)) return value;
+  if (sectionKey === "technologies" && isTechnologiesDocument(value))
+    return value;
   if (sectionKey === "contact" && isContactDocument(value)) return value;
+  if (sectionKey === "media-resume" && isMediaResumeDocument(value))
+    return value;
   throw new Error("Invalid content document response");
 }
 

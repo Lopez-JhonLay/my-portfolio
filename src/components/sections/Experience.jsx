@@ -1,8 +1,9 @@
 import { Briefcase } from "lucide-react";
 import { motion } from "framer-motion";
-import { experience } from "@/data/portfolio";
+import PropTypes from "prop-types";
+import { TimelineBodySkeleton } from "@/components/sections/content-skeletons";
 
-export function Experience() {
+export function Experience({ content, loading = false }) {
   return (
     <motion.section
       className="noir-section"
@@ -12,17 +13,15 @@ export function Experience() {
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.45 }}
     >
-      <div className="eyebrow type">03 - Field Notes</div>
+      <div className="eyebrow type">{content.eyebrow}</div>
       <h2 className="section-title">
         <Briefcase />
-        Timeline
+        {content.title}
       </h2>
-      <p className="section-lead">
-        A record of my professional experience and education.
-      </p>
+      <p className="section-lead">{content.lead}</p>
 
-      <div className="timeline">
-        {experience.map((item) => (
+      {loading ? <TimelineBodySkeleton /> : <div className="timeline">
+        {content.entries.map((item) => (
           <article className="timeline-item" key={`${item.role}-${item.date}`}>
             <div className="timeline-marker" aria-hidden="true" />
             <div>
@@ -35,7 +34,17 @@ export function Experience() {
             </div>
           </article>
         ))}
-      </div>
+      </div>}
     </motion.section>
   );
 }
+
+Experience.propTypes = {
+  content: PropTypes.shape({
+    entries: PropTypes.arrayOf(PropTypes.shape({ date: PropTypes.string.isRequired, detail: PropTypes.string.isRequired, location: PropTypes.string.isRequired, organization: PropTypes.string.isRequired, role: PropTypes.string.isRequired })).isRequired,
+    eyebrow: PropTypes.string.isRequired,
+    lead: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+  }).isRequired,
+  loading: PropTypes.bool,
+};

@@ -389,13 +389,19 @@ export function useProjectWorkspace(options: {
     try {
       const result =
         editor.mode === "create"
-          ? await client.create(operationId, csrfToken, attempted)
+          ? await client.create(
+              operationId,
+              csrfToken,
+              attempted,
+              validation.gallery ?? [],
+            )
           : await client.save(
               editor.project.id,
               operationId,
               csrfToken,
               editor.project.revision,
               attempted,
+              validation.gallery ?? [],
             );
       if (isProject(result)) {
         applyProject(result);

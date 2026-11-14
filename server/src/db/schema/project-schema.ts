@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   check,
   foreignKey,
   integer,
@@ -50,6 +51,15 @@ export const contentSectionKeyEnum = pgEnum(
   "content_section_key",
   CONTENT_SECTION_KEYS,
 );
+export const mediaAssetKindEnum = pgEnum("media_asset_kind", [
+  "image",
+  "resume_pdf",
+]);
+export const mediaAssetStatusEnum = pgEnum("media_asset_status", [
+  "pending",
+  "ready",
+  "failed",
+]);
 export const projectOperationStatusEnum = pgEnum("project_operation_status", [
   "pending",
   "succeeded",
@@ -147,6 +157,85 @@ export const projectDrafts = pgTable(
   ],
 );
 
+export const mediaAssets = pgTable(
+  "media_assets",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    kind: mediaAssetKindEnum("kind").notNull(),
+    objectKey: text("object_key").notNull(),
+    mimeType: text("mime_type").notNull(),
+    byteSize: bigint("byte_size", { mode: "bigint" }).notNull(),
+    originalFilename: text("original_filename").notNull(),
+    status: mediaAssetStatusEnum("status").default("pending").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    unique("media_assets_object_key_unique").on(table.objectKey),
+    check(
+      "media_assets_object_key_non_blank",
+      sql`btrim(${table.objectKey}) <> ''`,
+    ),
+    check(
+      "media_assets_mime_type_non_blank",
+      sql`btrim(${table.mimeType}) <> ''`,
+    ),
+    check("media_assets_byte_size_positive", sql`${table.byteSize} > 0`),
+    check(
+      "media_assets_original_filename_non_blank",
+      sql`btrim(${table.originalFilename}) <> ''`,
+    ),
+    check(
+      "media_assets_kind_mime_type",
+      sql`(${table.kind} = 'image' AND ${table.mimeType} IN ('image/jpeg', 'image/png', 'image/webp')) OR (${table.kind} = 'resume_pdf' AND ${table.mimeType} = 'application/pdf')`,
+    ),
+  ],
+);
+
+export const draftProjectMedia = pgTable(
+  "draft_project_media",
+  {
+    projectId: uuid("project_id")
+      .$type<ProjectId>()
+      .notNull()
+      .references(() => projects.id, {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      }),
+    mediaId: uuid("media_id")
+      .notNull()
+      .references(() => mediaAssets.id, {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      }),
+    position: integer("position").notNull(),
+    altText: text("alt_text").notNull(),
+    isCover: boolean("is_cover").notNull(),
+  },
+  (table) => [
+    unique("draft_project_media_project_media_unique").on(
+      table.projectId,
+      table.mediaId,
+    ),
+    unique("draft_project_media_project_position_unique").on(
+      table.projectId,
+      table.position,
+    ),
+    uniqueIndex("draft_project_media_one_cover_per_project")
+      .on(table.projectId)
+      .where(sql`${table.isCover}`),
+    check("draft_project_media_position_positive", sql`${table.position} > 0`),
+    check(
+      "draft_project_media_alt_text_non_blank",
+      sql`btrim(${table.altText}) <> ''`,
+    ),
+  ],
+);
+
 export const draftFeaturedState = pgTable(
   "draft_featured_state",
   {
@@ -232,6 +321,49 @@ export const publishedProjects = pgTable(
     unique("published_projects_category_group_order_unique").on(
       table.category,
       table.groupOrder,
+    ),
+  ],
+);
+
+export const publishedProjectMedia = pgTable(
+  "published_project_media",
+  {
+    projectId: uuid("project_id")
+      .$type<ProjectId>()
+      .notNull()
+      .references(() => publishedProjects.projectId, {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      }),
+    mediaId: uuid("media_id")
+      .notNull()
+      .references(() => mediaAssets.id, {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      }),
+    position: integer("position").notNull(),
+    altText: text("alt_text").notNull(),
+    isCover: boolean("is_cover").notNull(),
+  },
+  (table) => [
+    unique("published_project_media_project_media_unique").on(
+      table.projectId,
+      table.mediaId,
+    ),
+    unique("published_project_media_project_position_unique").on(
+      table.projectId,
+      table.position,
+    ),
+    uniqueIndex("published_project_media_one_cover_per_project")
+      .on(table.projectId)
+      .where(sql`${table.isCover}`),
+    check(
+      "published_project_media_position_positive",
+      sql`${table.position} > 0`,
+    ),
+    check(
+      "published_project_media_alt_text_non_blank",
+      sql`btrim(${table.altText}) <> ''`,
     ),
   ],
 );

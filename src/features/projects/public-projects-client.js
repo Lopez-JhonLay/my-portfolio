@@ -4,6 +4,8 @@ const PROJECT_CATEGORIES = [
   "Work Project",
   "Capstone Project",
 ];
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export class PublicProjectsError extends Error {
   constructor(message) {
@@ -37,6 +39,16 @@ function isProjectSlug(value) {
   );
 }
 
+function isMediaReference(value) {
+  return (
+    isRecord(value) &&
+    hasOnlyKeys(value, ["mediaId", "altText"]) &&
+    typeof value.mediaId === "string" &&
+    UUID_PATTERN.test(value.mediaId) &&
+    isNonBlankString(value.altText)
+  );
+}
+
 function isProjectCard(value) {
   if (!isRecord(value)) return false;
   if (
@@ -50,6 +62,7 @@ function isProjectCard(value) {
       "repo",
       "liveUrl",
       "slug",
+      "cover",
     ]) ||
     !isNonBlankString(value.number) ||
     !isNonBlankString(value.name) ||
@@ -67,7 +80,27 @@ function isProjectCard(value) {
     (value.role === undefined || isNonBlankString(value.role)) &&
     (value.repo === undefined || isHttpUrl(value.repo)) &&
     (value.liveUrl === undefined || isHttpUrl(value.liveUrl))
+    && (value.cover === undefined || isMediaReference(value.cover))
   );
+}
+
+function withMediaUrls(project, apiOrigin) {
+  const mediaUrl = (mediaId) => `${apiOrigin}/api/media/${mediaId}`;
+  return {
+    ...project,
+    tech: [...project.tech],
+    ...(project.cover === undefined
+      ? {}
+      : { cover: { ...project.cover, url: mediaUrl(project.cover.mediaId) } }),
+    ...(project.gallery === undefined
+      ? {}
+      : {
+          gallery: project.gallery.map((image) => ({
+            ...image,
+            url: mediaUrl(image.mediaId),
+          })),
+        }),
+  };
 }
 
 function parseStatus(value) {
@@ -83,7 +116,7 @@ function parseStatus(value) {
   return value.status;
 }
 
-function parseFeatured(value) {
+function parseFeatured(value, apiOrigin) {
   if (
     !isRecord(value) ||
     !hasOnlyKeys(value, ["projects"]) ||
@@ -96,13 +129,10 @@ function parseFeatured(value) {
       "The Projects service returned an unexpected response.",
     );
   }
-  return value.projects.map((project) => ({
-    ...project,
-    tech: [...project.tech],
-  }));
+  return value.projects.map((project) => withMediaUrls(project, apiOrigin));
 }
 
-function parseGroups(value) {
+function parseGroups(value, apiOrigin) {
   if (
     !Array.isArray(value) ||
     value.length !== PROJECT_CATEGORIES.length ||
@@ -125,11 +155,47 @@ function parseGroups(value) {
 
   return value.map((group) => ({
     category: group.category,
-    projects: group.projects.map((project) => ({
-      ...project,
-      tech: [...project.tech],
-    })),
+    projects: group.projects.map((project) =>
+      withMediaUrls(project, apiOrigin),
+    ),
   }));
+}
+
+function parseDetail(value, apiOrigin) {
+  const cardValue = isRecord(value)
+    ? Object.fromEntries(
+        Object.entries(value).filter(
+          ([key]) => key !== "longDescriptionMarkdown" && key !== "gallery",
+        ),
+      )
+    : value;
+  if (
+    !isProjectCard(cardValue) ||
+    !hasOnlyKeys(value, [
+      "number",
+      "name",
+      "category",
+      "description",
+      "role",
+      "tech",
+      "repo",
+      "liveUrl",
+      "slug",
+      "cover",
+      "longDescriptionMarkdown",
+      "gallery",
+    ]) ||
+    (value.longDescriptionMarkdown !== undefined &&
+      !isNonBlankString(value.longDescriptionMarkdown)) ||
+    !Array.isArray(value.gallery) ||
+    value.gallery.length > 5 ||
+    !value.gallery.every(isMediaReference)
+  ) {
+    throw new PublicProjectsError(
+      "The Projects service returned an unexpected response.",
+    );
+  }
+  return withMediaUrls(value, apiOrigin);
 }
 
 async function readJson(fetchImpl, url, signal) {
@@ -212,7 +278,9 @@ export async function loadPublicProjects({
       `${apiOrigin}/api/projects${path}`,
       controller.signal,
     );
-    return resource === "featured" ? parseFeatured(value) : parseGroups(value);
+    return resource === "featured"
+      ? parseFeatured(value, apiOrigin)
+      : parseGroups(value, apiOrigin);
   } catch (error) {
     if (controller.signal.reason?.name === "TimeoutError") {
       throw new PublicProjectsError(
@@ -226,4 +294,30 @@ export async function loadPublicProjects({
     clearTimeout(timeout);
     signal?.removeEventListener("abort", abortFromCaller);
   }
+}
+
+export async function loadPublicProjectDetail({
+  apiOrigin,
+  fetchImpl = fetch,
+  signal,
+  slug,
+  staticProject,
+}) {
+  const status = parseStatus(
+    await readJson(fetchImpl, `${apiOrigin}/api/projects/status`, signal),
+  );
+  if (status === "never-published") {
+    if (staticProject === undefined) {
+      throw new PublicProjectsError("Project not found.");
+    }
+    return { ...structuredClone(staticProject), gallery: [] };
+  }
+  return parseDetail(
+    await readJson(
+      fetchImpl,
+      `${apiOrigin}/api/projects/${encodeURIComponent(slug)}`,
+      signal,
+    ),
+    apiOrigin,
+  );
 }

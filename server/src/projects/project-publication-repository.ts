@@ -7,16 +7,24 @@ import type {
 import {
   contentSectionDrafts,
   draftFeaturedState,
+  draftProjectMedia,
+  mediaAssets,
   projectDrafts,
   projectOperations,
   projects,
   publishedProjects,
+  publishedProjectMedia,
   publishedContentSections,
   publishedSlugs,
   publishedState,
 } from "../db/schema/project-schema.ts";
 import { parseContentDocument } from "../content/content-contract.ts";
-import type { ProjectRecord, ProjectVersion } from "./project-contract.ts";
+import type {
+  ProjectGallery,
+  ProjectId,
+  ProjectRecord,
+  ProjectVersion,
+} from "./project-contract.ts";
 import {
   createProjectPublicationService,
   ProjectPublicationConsistencyError,
@@ -209,6 +217,54 @@ export function createDrizzleProjectPublicationQueries(
         .from(contentSectionDrafts)
         .orderBy(asc(contentSectionDrafts.sectionKey))
         .for("update");
+      const galleryRows = await session
+        .select({
+          projectId: draftProjectMedia.projectId,
+          mediaId: draftProjectMedia.mediaId,
+          altText: draftProjectMedia.altText,
+          isCover: draftProjectMedia.isCover,
+          status: mediaAssets.status,
+        })
+        .from(draftProjectMedia)
+        .innerJoin(mediaAssets, eq(mediaAssets.id, draftProjectMedia.mediaId))
+        .orderBy(
+          asc(draftProjectMedia.projectId),
+          asc(draftProjectMedia.position),
+        )
+        .for("update");
+      const mediaDocument = contentRows.find(
+        ({ sectionKey }) => sectionKey === "media-resume",
+      )?.document as
+        | { profileImageMediaId?: string | null; resumeMediaId?: string | null }
+        | undefined;
+      const contentMediaIds = [
+        mediaDocument?.profileImageMediaId,
+        mediaDocument?.resumeMediaId,
+      ].filter((value): value is string => typeof value === "string");
+      const contentMediaRows =
+        contentMediaIds.length === 0
+          ? []
+          : await session
+              .select({
+                id: mediaAssets.id,
+                kind: mediaAssets.kind,
+                status: mediaAssets.status,
+              })
+              .from(mediaAssets)
+              .where(inArray(mediaAssets.id, contentMediaIds))
+              .for("update");
+      const projectGalleries = new Map<ProjectId, ProjectGallery>();
+      for (const row of galleryRows) {
+        const gallery = projectGalleries.get(row.projectId) ?? [];
+        projectGalleries.set(row.projectId, [
+          ...gallery,
+          {
+            mediaId: row.mediaId,
+            altText: row.altText,
+            isCover: row.isCover,
+          },
+        ]);
+      }
 
       return {
         featuredProjectIds: [
@@ -229,11 +285,29 @@ export function createDrizzleProjectPublicationQueries(
           sectionKey: row.sectionKey,
           document: parseContentDocument(row.sectionKey, row.document),
         })),
+        projectGalleries: [...projectGalleries].map(([projectId, gallery]) => ({
+          projectId,
+          gallery,
+        })),
+        galleryAssetsReady: galleryRows.every(
+          ({ status }) => status === "ready",
+        ),
+        contentMediaReady:
+          contentMediaRows.length === contentMediaIds.length &&
+          contentMediaRows.every(({ id, kind, status }) => {
+            if (status !== "ready") return false;
+            if (id === mediaDocument?.profileImageMediaId)
+              return kind === "image";
+            if (id === mediaDocument?.resumeMediaId)
+              return kind === "resume_pdf";
+            return false;
+          }),
       };
     },
     publishSnapshot: async ({
       candidate,
       contentSections,
+      projectGalleries = [],
       operationId,
       snapshotRevision,
     }) => {
@@ -246,6 +320,7 @@ export function createDrizzleProjectPublicationQueries(
 
       await session.delete(publishedState);
       await session.delete(publishedContentSections);
+      await session.delete(publishedProjectMedia);
       await session.delete(publishedProjects);
       if (included.length > 0) {
         await session
@@ -256,6 +331,21 @@ export function createDrizzleProjectPublicationQueries(
         await session
           .insert(publishedContentSections)
           .values([...contentSections]);
+      }
+      const publishedGalleryRows = projectGalleries.flatMap(
+        ({ projectId, gallery }) =>
+          gallery.map((item, index) => ({
+            projectId,
+            mediaId: item.mediaId,
+            position: index + 1,
+            altText: item.altText,
+            isCover: item.isCover,
+          })),
+      );
+      if (publishedGalleryRows.length > 0) {
+        await session
+          .insert(publishedProjectMedia)
+          .values(publishedGalleryRows);
       }
       if (includedIds.length > 0) {
         await session

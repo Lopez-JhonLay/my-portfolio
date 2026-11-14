@@ -15,10 +15,12 @@ type RequestLocals = {
 export type AppOptions = {
   readonly adminOrigin: string;
   readonly adminContentRouter?: Router;
+  readonly adminMediaRouter?: Router;
   readonly adminProjectRouter?: Router;
   readonly authRouter: Router;
   readonly publicProjectRouter?: Router;
   readonly publicPortfolioRouter?: Router;
+  readonly publicMediaRouter?: Router;
 };
 
 export function createApp(options?: AppOptions): Express {
@@ -44,6 +46,9 @@ export function createApp(options?: AppOptions): Express {
     if (options.publicPortfolioRouter !== undefined) {
       app.use("/api/portfolio", options.publicPortfolioRouter);
     }
+    if (options.publicMediaRouter !== undefined) {
+      app.use("/api/media", options.publicMediaRouter);
+    }
     const originMiddleware = createAdminOriginMiddleware(options.adminOrigin);
     app.use("/api/auth", originMiddleware, options.authRouter);
     if (options.adminProjectRouter !== undefined) {
@@ -51,6 +56,9 @@ export function createApp(options?: AppOptions): Express {
     }
     if (options.adminContentRouter !== undefined) {
       app.use("/api/admin", originMiddleware, options.adminContentRouter);
+    }
+    if (options.adminMediaRouter !== undefined) {
+      app.use("/api/admin", originMiddleware, options.adminMediaRouter);
     }
   }
   app.use(notFoundHandler);

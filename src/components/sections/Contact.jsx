@@ -2,6 +2,7 @@ import { FaFacebook, FaGithub, FaLinkedin } from "react-icons/fa";
 import { ArrowUpRight, Mail, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
+import { ContactBodySkeleton } from "@/components/sections/content-skeletons";
 
 const socialIcons = {
   github: FaGithub,
@@ -9,7 +10,7 @@ const socialIcons = {
   facebook: FaFacebook,
 };
 
-export function Contact({ content, location }) {
+export function Contact({ content, loading = false, location }) {
   return (
     <motion.section
       className="noir-section"
@@ -26,7 +27,7 @@ export function Contact({ content, location }) {
       </h2>
       <p className="section-lead">{content.availability}</p>
 
-      <div className="contact-wrap">
+      {loading ? <ContactBodySkeleton /> : <div className="contact-wrap">
         <div className="contact-note">
           <h3>{content.noteTitle}</h3>
           <p>{content.noteBody}</p>
@@ -65,7 +66,7 @@ export function Contact({ content, location }) {
             );
           })}
         </div>
-      </div>
+      </div>}
     </motion.section>
   );
 }
@@ -84,5 +85,6 @@ Contact.propTypes = {
     })).isRequired,
     title: PropTypes.string.isRequired,
   }).isRequired,
+  loading: PropTypes.bool,
   location: PropTypes.string.isRequired,
 };

@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import type {
@@ -7,10 +7,15 @@ import type {
 } from "../db/database-session.ts";
 import {
   publishedProjects,
+  publishedProjectMedia,
   publishedSlugs,
   publishedState,
 } from "../db/schema/project-schema.ts";
-import type { ProjectId, ProjectVersion } from "./project-contract.ts";
+import type {
+  ProjectGallery,
+  ProjectId,
+  ProjectVersion,
+} from "./project-contract.ts";
 import {
   mapPublicFeaturedProjects,
   mapPublicProjectDetail,
@@ -30,11 +35,13 @@ export type PublishedStateRecord = {
 export type PublishedProjectRecord = {
   projectId: ProjectId;
   project: ProjectVersion;
+  gallery?: ProjectGallery;
 };
 
 export type PublishedSlugRecord = {
   kind: "current" | "redirect";
   project: ProjectVersion;
+  gallery?: ProjectGallery;
 };
 
 export type PublishedProjectReadQueries = {
@@ -106,6 +113,7 @@ type PublishedProjectQueryRow = {
 
 function toPublishedProjectRecord(
   row: PublishedProjectQueryRow,
+  gallery: ProjectGallery = [],
 ): PublishedProjectRecord {
   return {
     projectId: row.projectId,
@@ -124,7 +132,42 @@ function toPublishedProjectRecord(
       groupOrder: row.groupOrder,
       slug: row.slug,
     },
+    gallery,
   };
+}
+
+async function readPublishedGalleries(
+  session: ProjectDatabaseTransaction,
+  projectIds: readonly ProjectId[],
+): Promise<Map<ProjectId, ProjectGallery>> {
+  if (projectIds.length === 0) return new Map();
+  const rows = await session
+    .select({
+      projectId: publishedProjectMedia.projectId,
+      mediaId: publishedProjectMedia.mediaId,
+      altText: publishedProjectMedia.altText,
+      isCover: publishedProjectMedia.isCover,
+    })
+    .from(publishedProjectMedia)
+    .where(inArray(publishedProjectMedia.projectId, [...projectIds]))
+    .orderBy(
+      asc(publishedProjectMedia.projectId),
+      asc(publishedProjectMedia.position),
+    );
+  const galleries = new Map<ProjectId, ProjectGallery>();
+  for (const projectId of projectIds) {
+    galleries.set(
+      projectId,
+      rows
+        .filter((row) => row.projectId === projectId)
+        .map(({ mediaId, altText, isCover }) => ({
+          mediaId,
+          altText,
+          isCover,
+        })),
+    );
+  }
+  return galleries;
 }
 
 function publishedProjectJoin(session: ProjectDatabaseTransaction) {
@@ -168,14 +211,25 @@ export function createDrizzlePublishedProjectReadQueries(
             snapshotRevision: state.snapshotRevision,
           };
     },
-    readPublishedProjects: async () =>
-      (await publishedProjectJoin(session)).map(toPublishedProjectRecord),
-    readPublishedProjectsByIds: async (projectIds) =>
-      (
-        await publishedProjectJoin(session).where(
-          inArray(publishedProjects.projectId, [...projectIds]),
-        )
-      ).map(toPublishedProjectRecord),
+    readPublishedProjects: async () => {
+      const rows = await publishedProjectJoin(session);
+      const galleries = await readPublishedGalleries(
+        session,
+        rows.map(({ projectId }) => projectId),
+      );
+      return rows.map((row) =>
+        toPublishedProjectRecord(row, galleries.get(row.projectId)),
+      );
+    },
+    readPublishedProjectsByIds: async (projectIds) => {
+      const rows = await publishedProjectJoin(session).where(
+        inArray(publishedProjects.projectId, [...projectIds]),
+      );
+      const galleries = await readPublishedGalleries(session, projectIds);
+      return rows.map((row) =>
+        toPublishedProjectRecord(row, galleries.get(row.projectId)),
+      );
+    },
     readPublishedSlug: async (slug) => {
       const rows = await session
         .select({
@@ -198,12 +252,17 @@ export function createDrizzlePublishedProjectReadQueries(
         .limit(1);
       const [row] = rows;
 
-      return row === undefined
-        ? null
-        : {
-            kind: row.kind,
-            project: toPublishedProjectRecord(row).project,
-          };
+      if (row === undefined) return null;
+      const galleries = await readPublishedGalleries(session, [row.projectId]);
+      const record = toPublishedProjectRecord(
+        row,
+        galleries.get(row.projectId),
+      );
+      return {
+        kind: row.kind,
+        project: record.project,
+        gallery: record.gallery,
+      };
     },
   };
 }
@@ -227,11 +286,16 @@ export function createPublishedProjectReadRepository<Session>(
 
         if (state === null) return NEVER_PUBLISHED;
 
+        const records = await queries.readPublishedProjects();
         return {
           status: "available",
           data: mapPublicProjectGroups(
-            (await queries.readPublishedProjects()).map(
-              ({ project }) => project,
+            records.map(({ project }) => project),
+            new Map(
+              records.map(({ project, gallery }) => [
+                project.slug,
+                gallery ?? [],
+              ]),
             ),
           ),
         };
@@ -247,24 +311,34 @@ export function createPublishedProjectReadRepository<Session>(
           state.featuredProjectIds,
         );
         const projectsById = new Map(
-          projects.map(
-            ({ projectId, project }) => [projectId, project] as const,
-          ),
+          projects.map((record) => [record.projectId, record] as const),
         );
-        const orderedProjects = state.featuredProjectIds.map((projectId) =>
+        const orderedRecords = state.featuredProjectIds.map((projectId) =>
           projectsById.get(projectId),
         );
 
-        if (orderedProjects.some((project) => project === undefined)) {
+        if (orderedRecords.some((project) => project === undefined)) {
           throw new PublishedSnapshotConsistencyError(
             "Published featured state references missing published Projects",
           );
         }
+        const completeRecords = orderedRecords as [
+          PublishedProjectRecord,
+          PublishedProjectRecord,
+          PublishedProjectRecord,
+        ];
+        const orderedProjects = completeRecords.map(({ project }) => project);
 
         return {
           status: "available",
           data: mapPublicFeaturedProjects(
             orderedProjects as [ProjectVersion, ProjectVersion, ProjectVersion],
+            new Map(
+              completeRecords.map(({ project, gallery }) => [
+                project.slug,
+                gallery ?? [],
+              ]),
+            ),
           ),
         };
       }),
@@ -284,7 +358,10 @@ export function createPublishedProjectReadRepository<Session>(
 
         return {
           status: "available",
-          data: mapPublicProjectDetail(slugRecord.project),
+          data: mapPublicProjectDetail(
+            slugRecord.project,
+            slugRecord.gallery ?? [],
+          ),
         };
       }),
   };

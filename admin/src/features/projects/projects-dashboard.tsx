@@ -1,11 +1,12 @@
 import { ChevronRight } from "lucide-react";
-import { lazy, Suspense, useEffect, useMemo, useRef } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import type { AdminView } from "../shell/admin-route";
 import { OperationAlert } from "../shell/operation-alert";
 import { createContentClient } from "../content/content-client";
 import { useContentReadiness } from "../content/use-content-readiness";
+import { createMediaClient, type MediaAsset } from "../media/media-client";
 
 import { ConflictPanel } from "./conflict-panel";
 import { createProjectClient } from "./project-client";
@@ -82,6 +83,8 @@ export function ProjectsDashboard({
     () => createContentClient(apiOrigin),
     [apiOrigin],
   );
+  const mediaClient = useMemo(() => createMediaClient(apiOrigin), [apiOrigin]);
+  const [mediaAssets, setMediaAssets] = useState<readonly MediaAsset[]>([]);
   const contentReadiness = useContentReadiness({
     client: contentClient,
     onUnauthorized,
@@ -101,6 +104,19 @@ export function ProjectsDashboard({
 
   const dirty = workspace.dirty || featured.dirty;
   const synchronizedRoute = useRef<string | null>(null);
+
+  useEffect(() => {
+    void mediaClient
+      .list()
+      .then(setMediaAssets)
+      .catch(() => setMediaAssets([]));
+  }, [mediaClient]);
+
+  async function uploadProjectImage(file: File) {
+    const asset = await mediaClient.upload(file, csrfToken);
+    setMediaAssets((current) => [...current, asset]);
+    return { id: asset.id, originalFilename: asset.originalFilename };
+  }
 
   useEffect(() => {
     onDirtyChange(dirty);
@@ -364,6 +380,16 @@ export function ProjectsDashboard({
                   />
                 ) : (
                   <ProjectForm
+                    availableImages={mediaAssets
+                      .filter(
+                        (asset) =>
+                          asset.kind === "image" && asset.status === "ready",
+                      )
+                      .map((asset) => ({
+                        id: asset.id,
+                        originalFilename: asset.originalFilename,
+                        previewUrl: mediaClient.fileUrl(asset.id),
+                      }))}
                     disabled={
                       workspace.isSaving || workspace.pendingOperation !== null
                     }
@@ -371,6 +397,7 @@ export function ProjectsDashboard({
                     isSaving={workspace.isSaving}
                     onChange={workspace.setForm}
                     onSubmit={() => void workspace.save()}
+                    onUploadImage={uploadProjectImage}
                     statusLabel={
                       workspace.pendingOperation !== null
                         ? "Outcome unknown"

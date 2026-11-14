@@ -14,6 +14,18 @@ import { UnsavedChangesDialog } from "./features/shell/unsaved-changes-dialog";
 import { AdminApiError } from "./lib/admin-http";
 
 const DEFAULT_API_ORIGIN = "http://127.0.0.1:3000";
+type TextContentView = Exclude<EditableContentSectionKey, "media-resume">;
+const TEXT_CONTENT_VIEWS: readonly TextContentView[] = [
+  "hero",
+  "about",
+  "timeline",
+  "technologies",
+  "contact",
+];
+
+function isTextContentView(value: string): value is TextContentView {
+  return TEXT_CONTENT_VIEWS.includes(value as TextContentView);
+}
 
 function apiOrigin(): string {
   const configuredValue = import.meta.env.VITE_API_ORIGIN as unknown;
@@ -186,9 +198,7 @@ export function App() {
   return (
     <>
       <AdminShell isBusy={isLoggingOut} onLogout={requestLogout}>
-        {(["hero", "about", "contact"] as const).includes(
-          view as EditableContentSectionKey,
-        ) ? (
+        {isTextContentView(view) ? (
           <ContentEditorPage
             apiOrigin={origin}
             csrfToken={csrfToken}
@@ -196,7 +206,7 @@ export function App() {
             onDiscardReady={registerDiscardChanges}
             onDirtyChange={setHasUnsavedChanges}
             onUnauthorized={markUnauthorized}
-            sectionKey={view as EditableContentSectionKey}
+            sectionKey={view}
           />
         ) : (
           <ProjectsDashboard

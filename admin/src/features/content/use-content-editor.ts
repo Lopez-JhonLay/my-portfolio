@@ -13,6 +13,7 @@ import { validateEditableContent } from "./content-validation";
 
 const POLL_INTERVAL_MS = 5_000;
 const POLL_ATTEMPTS = 12;
+const VALIDATION_NOTICE = "Review the highlighted fields before saving.";
 
 type Notice = {
   readonly kind: "error" | "info" | "success" | "warning";
@@ -44,6 +45,14 @@ function friendlyError(error: unknown): string {
     : "The Admin API returned an unexpected response.";
 }
 
+function isMissingOperation(error: unknown): boolean {
+  return (
+    error instanceof AdminApiError &&
+    error.status === 404 &&
+    error.code === "NOT_FOUND"
+  );
+}
+
 export function useContentEditor(options: {
   readonly client: ContentClient;
   readonly csrfToken: string;
@@ -52,7 +61,7 @@ export function useContentEditor(options: {
 }) {
   const { client, csrfToken, onUnauthorized, sectionKey } = options;
   const [section, setSection] = useState<AdminContentSection | null>(null);
-  const [document, setDocument] = useState<EditableContentDocument | null>(
+  const [document, setDocumentState] = useState<EditableContentDocument | null>(
     null,
   );
   const [baseline, setBaseline] = useState<EditableContentDocument | null>(
@@ -90,11 +99,32 @@ export function useContentEditor(options: {
 
   const applySection = useCallback((next: AdminContentSection) => {
     setSection(next);
-    setDocument(next.document);
+    setDocumentState(next.document);
     setBaseline(next.document);
     setErrors({});
     setConflict(null);
   }, []);
+
+  const changeDocument = useCallback((next: EditableContentDocument) => {
+    setDocumentState(next);
+    setErrors({});
+    setNotice((current) =>
+      current?.kind === "error" && current.message === VALIDATION_NOTICE
+        ? null
+        : current,
+    );
+  }, []);
+
+  const clearMissingOperation = useCallback(() => {
+    sessionStorage.removeItem(operationStorageKey(sectionKey));
+    setPendingOperationId(null);
+    setPendingAttempted(null);
+    setNotice({
+      kind: "warning",
+      message:
+        "The previous save was not recorded. Your loaded draft was not changed; review it and save again.",
+    });
+  }, [sectionKey]);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -165,6 +195,10 @@ export function useContentEditor(options: {
           )
             return;
         } catch (error) {
+          if (isMissingOperation(error)) {
+            clearMissingOperation();
+            return;
+          }
           if (error instanceof AdminApiError && error.status === 401) {
             onUnauthorized();
             return;
@@ -177,7 +211,13 @@ export function useContentEditor(options: {
           "Save outcome is still unknown. Check the operation again before another save.",
       });
     },
-    [client, onUnauthorized, resolveOperation, sectionKey],
+    [
+      clearMissingOperation,
+      client,
+      onUnauthorized,
+      resolveOperation,
+      sectionKey,
+    ],
   );
 
   useEffect(() => {
@@ -197,10 +237,18 @@ export function useContentEditor(options: {
               "A previous Save Draft is still unresolved. It was checked without retrying.",
           });
       } catch (error) {
-        handleError(error);
+        if (isMissingOperation(error)) clearMissingOperation();
+        else handleError(error);
       }
     })();
-  }, [client, handleError, load, resolveOperation, sectionKey]);
+  }, [
+    clearMissingOperation,
+    client,
+    handleError,
+    load,
+    resolveOperation,
+    sectionKey,
+  ]);
 
   useEffect(() => {
     function warn(event: BeforeUnloadEvent) {
@@ -211,7 +259,7 @@ export function useContentEditor(options: {
   }, [dirty]);
 
   const discardChanges = useCallback(() => {
-    if (baseline !== null) setDocument(baseline);
+    if (baseline !== null) setDocumentState(baseline);
     setErrors({});
     setConflict(null);
     setNotice(null);
@@ -230,7 +278,7 @@ export function useContentEditor(options: {
     if (validation.document === undefined) {
       setNotice({
         kind: "error",
-        message: "Review the highlighted fields before saving.",
+        message: VALIDATION_NOTICE,
       });
       return;
     }
@@ -301,7 +349,8 @@ export function useContentEditor(options: {
           message: "The save is still pending and was not retried.",
         });
     } catch (error) {
-      handleError(error);
+      if (isMissingOperation(error)) clearMissingOperation();
+      else handleError(error);
     } finally {
       setIsSaving(false);
     }
@@ -309,7 +358,7 @@ export function useContentEditor(options: {
 
   function keepConflictEdits() {
     if (conflict === null) return;
-    setDocument(conflict.attempted);
+    setDocumentState(conflict.attempted);
     setConflict(null);
     setNotice({
       kind: "info",
@@ -338,7 +387,7 @@ export function useContentEditor(options: {
     pendingOperationId,
     save,
     section,
-    setDocument,
+    setDocument: changeDocument,
     useSavedConflict,
   };
 }

@@ -8,6 +8,7 @@ import {
 } from "../content/content-contract.ts";
 import {
   projectPublishCandidateSchema,
+  type ProjectGallery,
   type ProjectId,
   type ProjectPublishCandidate,
   type ProjectRecord,
@@ -63,6 +64,12 @@ export type PublicationCandidateState = {
     readonly sectionKey: ContentSectionKey;
     readonly document: ContentDocument;
   }[];
+  readonly projectGalleries?: readonly {
+    readonly projectId: ProjectId;
+    readonly gallery: ProjectGallery;
+  }[];
+  readonly galleryAssetsReady?: boolean;
+  readonly contentMediaReady?: boolean;
 };
 
 export type ProjectPublicationQueries = {
@@ -83,6 +90,10 @@ export type ProjectPublicationQueries = {
     readonly contentSections: readonly {
       readonly sectionKey: ContentSectionKey;
       readonly document: ContentDocument;
+    }[];
+    readonly projectGalleries?: readonly {
+      readonly projectId: ProjectId;
+      readonly gallery: ProjectGallery;
     }[];
     readonly operationId: string;
     readonly snapshotRevision: bigint;
@@ -176,6 +187,10 @@ function validateCandidate(state: PublicationCandidateState): {
     readonly sectionKey: ContentSectionKey;
     readonly document: ContentDocument;
   }[];
+  readonly projectGalleries: readonly {
+    readonly projectId: ProjectId;
+    readonly gallery: ProjectGallery;
+  }[];
 } | null {
   const parsed = projectPublishCandidateSchema.safeParse({
     projects: state.projects,
@@ -212,6 +227,15 @@ function validateCandidate(state: PublicationCandidateState): {
   }
 
   const contentSections = state.contentSections ?? [];
+  const projectGalleries = state.projectGalleries ?? [];
+  const includedIds = new Set(included.map(({ id }) => id));
+  if (
+    state.galleryAssetsReady === false ||
+    state.contentMediaReady === false ||
+    projectGalleries.some(({ projectId }) => !includedIds.has(projectId))
+  ) {
+    return null;
+  }
   try {
     return {
       candidate: parsed.data,
@@ -219,6 +243,7 @@ function validateCandidate(state: PublicationCandidateState): {
         sectionKey,
         document: parseContentDocument(sectionKey, document),
       })),
+      projectGalleries,
     };
   } catch {
     return null;
@@ -311,6 +336,7 @@ export function createProjectPublicationService<Session>(
           await queries.publishSnapshot({
             candidate: publication.candidate,
             contentSections: publication.contentSections,
+            projectGalleries: publication.projectGalleries,
             operationId,
             snapshotRevision,
           });

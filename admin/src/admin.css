@@ -1638,7 +1638,14 @@ textarea[aria-invalid="true"]:focus-visible {
 .content-workspace > [role="status"] {
   margin-bottom: 1rem;
 }
-.content-form-section,
+.content-form-section {
+  padding: 1.5rem 0;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
 .content-conflict {
   padding: 1.25rem;
   margin-top: 1rem;
@@ -1649,6 +1656,37 @@ textarea[aria-invalid="true"]:focus-visible {
 .content-form-section h2,
 .content-conflict h2 {
   font-size: 0.9375rem;
+}
+.media-preview {
+  width: min(100%, 24rem);
+  margin-top: 1rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.media-preview img {
+  display: block;
+  width: 100%;
+  max-height: 15rem;
+  object-fit: contain;
+}
+.media-preview iframe {
+  display: block;
+  width: 100%;
+  height: 18rem;
+  border: 0;
+  background: white;
+}
+.project-gallery-preview {
+  display: block;
+  width: min(100%, 20rem);
+  max-height: 12rem;
+  margin: 0.75rem 0 1rem;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
 }
 .content-field-grid {
   display: grid;
@@ -1670,15 +1708,25 @@ textarea[aria-invalid="true"]:focus-visible {
 .content-field textarea {
   min-height: 7rem;
 }
+.content-field input,
+.content-field textarea,
 .content-field select {
   width: 100%;
-  height: 2.25rem;
-  padding: 0 0.75rem;
-  border: 1px solid var(--input);
-  border-radius: 999px;
-  color: var(--foreground);
-  background: var(--background);
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--border-strong);
+  color: var(--ink);
+  background: var(--surface);
   font: inherit;
+  line-height: 1.5;
+}
+.content-field input,
+.content-field select {
+  height: auto;
+  min-height: 2.5rem;
+  border-radius: 999px;
+}
+.content-field textarea {
+  border-radius: var(--radius-lg);
 }
 .content-array-list {
   display: grid;
@@ -1697,6 +1745,23 @@ textarea[aria-invalid="true"]:focus-visible {
 }
 .content-array-row .content-field-grid {
   margin-top: 0;
+}
+.technology-group-editor {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--background);
+}
+.technology-group-editor > .content-array-row {
+  padding: 0;
+  border: 0;
+}
+.technology-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
 }
 .content-row-actions svg,
 .content-save-bar svg,

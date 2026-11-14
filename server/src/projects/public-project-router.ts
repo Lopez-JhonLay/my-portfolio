@@ -3,6 +3,7 @@ import { Router } from "express";
 import { ApplicationError } from "../middleware/application-error.ts";
 import {
   publicFeaturedProjectsSchema,
+  publicProjectDetailSchema,
   publicProjectGroupsSchema,
   publicProjectStatusSchema,
 } from "./public-project-contract.ts";
@@ -79,6 +80,37 @@ export function createPublicProjectRouter(options: {
           available(await options.repository.readFeatured()),
         ),
       );
+    } catch (error) {
+      unavailableSnapshot(error);
+    }
+  });
+
+  router.get("/:slug", async (request, response) => {
+    const slug = request.params.slug;
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+      throw new ApplicationError({
+        code: "NOT_FOUND",
+        message: "The requested Project was not found.",
+        status: 404,
+      });
+    }
+    try {
+      const result = await options.repository.readBySlug(slug);
+      if (
+        result.status === "never-published" ||
+        result.status === "not-found"
+      ) {
+        throw new ApplicationError({
+          code: "NOT_FOUND",
+          message: "The requested Project was not found.",
+          status: 404,
+        });
+      }
+      if (result.status === "redirect") {
+        response.redirect(308, `/api/projects/${result.slug}`);
+        return;
+      }
+      response.json(publicProjectDetailSchema.parse(result.data));
     } catch (error) {
       unavailableSnapshot(error);
     }
