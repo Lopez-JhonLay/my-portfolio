@@ -1,4 +1,4 @@
-import { FileText } from "lucide-react";
+import { FileText, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { profile } from "@/data/portfolio";
 import PropTypes from "prop-types";
@@ -96,6 +96,10 @@ export function Hero({ content, loading = false, resumeUrl = profile.portfolioUr
                   <FileText />
                   {content.resumeButtonLabel}
                 </a>
+                <a className="noir-button noir-button-ghost" href="/#contact">
+                  <MessageCircle />
+                  {content.contactButtonLabel}
+                </a>
               </div>
             </div>
           )}
@@ -109,6 +113,7 @@ export function Hero({ content, loading = false, resumeUrl = profile.portfolioUr
 
 Hero.propTypes = {
   content: PropTypes.shape({
+    contactButtonLabel: PropTypes.string.isRequired,
     description: PropTypes.string.isRequired,
     heroRole: PropTypes.string.isRequired,
     resumeButtonLabel: PropTypes.string.isRequired,

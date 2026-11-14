@@ -1,7 +1,10 @@
 import { ArrowLeft } from "lucide-react";
 import { capstoneProjects, personalProjects, workProjects } from "@/data/portfolio";
 import { ProjectCard } from "@/components/projects/ProjectCard";
-import { ProjectLoadState } from "@/components/projects/project-load-state";
+import {
+  ProjectCardsSkeleton,
+  ProjectLoadState,
+} from "@/components/projects/project-load-state";
 import { usePublicProjects } from "@/features/projects/use-public-projects";
 
 const STATIC_PROJECT_GROUPS = [
@@ -24,11 +27,16 @@ export function AllProjects() {
           Back to Home
         </a>
 
-        {projectsState.status !== "ready" ? (
-          <ProjectLoadState
-            status={projectsState.status}
-            onRetry={projectsState.retry}
-          />
+        {projectsState.status === "loading" ? (
+          <section className="project-group content-skeleton">
+            <span className="skeleton-block skeleton-label" aria-hidden="true" />
+            <span className="skeleton-block skeleton-heading" aria-hidden="true" />
+            <div className="corkboard">
+              <ProjectCardsSkeleton className="all-project-grid" />
+            </div>
+          </section>
+        ) : projectsState.status === "error" ? (
+          <ProjectLoadState status="error" onRetry={projectsState.retry} />
         ) : (
           <>
             <section
